@@ -11,7 +11,7 @@ def SimpleSearch(SearchObject,array):
 def BinarySearch(SearchObject, array):
     low=0
     high=len(array)-1
-    if SearchObject==array[low]: return low+1, 1
+    if array[low] == SearchObject: return low + 1, 1
     if SearchObject == array[high]: return high + 1, 2
     iter = 2
     while (high-low)>1:
