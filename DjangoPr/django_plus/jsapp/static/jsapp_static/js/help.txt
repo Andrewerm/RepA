@@ -1,0 +1,6 @@
+x = 1; // числа
+x = 0.01 ;
+x = ' привет мир '
+x  = true
+x = null
+x = undefined;
