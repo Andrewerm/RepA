@@ -1,4 +1,4 @@
-from collections import deque
+from functools import reduce
 
 ways=[('A', 'B'),
       ('B','D'),
@@ -9,26 +9,43 @@ ways=[('A', 'B'),
       ('D', 'G'),
       ('E', 'G'),
       ('A', 'F'),
+      ('D','C'),
       ('F','H'),
-      ('D','C')
       ]
 
 def SearchShotWay(start, end):
-    search_queue=deque()
-    store=[]
-    routes=[]
+    STORE={}
+    ROUTES=[]
     def add_store(elem):
-        a=store.get(elem[0])
+        a=STORE.get(elem[0])
         if a and elem[1] not in a:
-            store[elem[0]].append(elem[1])
-        else: store[elem[0]]=[elem[1]]
+            STORE[elem[0]].append(elem[1])
+        else: STORE[elem[0]]=[elem[1]]
 
+    def AddRoute(routeA):
+        routeB=routeA.copy()
+        if routeB[-1]!=end and STORE.get(routeB[-1]):
+            arrows=list(filter(lambda x:  x not in routeB, STORE[(routeB[-1])]))
+            for i in arrows:
+                routeB.append(i)
+                AddRoute(routeB)
+                routeB=routeB[:-1]
+        else:
+            if routeB[-1]==end: ROUTES.append(routeB.copy())
+            return
+
+
+
+    # route=[start]
     for i in ways:
         add_store(i)
+    AddRoute([start])
+    lenRoutes=list(map(len,ROUTES))
+    mini=min(lenRoutes)
+    print(list (filter(lambda x: len(ROUTES)==mini , ROUTES)))
 
-    if end in store[start]:
-        routes.append(start,end)
-        else
 
 
-SearchShotWay('A', 'G')
+
+
+SearchShotWay('A', 'E')
