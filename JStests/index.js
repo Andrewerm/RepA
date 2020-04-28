@@ -1,3 +1,10 @@
+import { Counter, Car1 } from './tests';
+
+
+const c=new Counter();
+c.inc()
+
+
 const SimpleSearch=function (SearchObject,arr) {
     let iter=0;
     while (iter<=arr.length-1) {
@@ -29,7 +36,7 @@ const testing=function(func) {
     const arr = [1, 5, 8, 10, 15, 17, 19, 22, 28, 35, 39, 42, 45, 59, 63, 68, 79, 85, 95, 99, 102, 103, 104, 105];
     const tests=[[42,12], [99, 20], [100, null], [1,1], [68,16], [85,18],[105,24],[69,null]];
     tests.forEach((elem,index) => {
-        res=func(elem[0],arr);
+        let res=func(elem[0],arr);
         if (res[0]===elem[1]) console.log(index+1+' -ый тест успешен, кол-во итераций '+res[1]);
             else console.log(index+1+' -ый тест провален, кол-во итераций '+res[1]);
             }
