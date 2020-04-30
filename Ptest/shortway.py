@@ -42,4 +42,4 @@ if __name__ == '__main__':
             ('D', 'C'),
             ('F', 'H'),
             ]
-    print(SearchShotWay('A', 'G'))
+    print(SearchShotWay('B', 'H'))
