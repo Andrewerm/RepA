@@ -15,12 +15,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from teststaticapp import views
+from firstapp import views
+
 from django.conf import settings
 from django.conf.urls.static import static
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.home, name='home'),
+    path('<int:pizza_id>/', views.pizza_detail, name='pizza-detail'),
     # path('testapp/', include('testurlapp.test_urls')),
-]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)+\
+              static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
