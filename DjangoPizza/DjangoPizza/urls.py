@@ -23,7 +23,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('formpage/', views.form_view, name='form-page'),
+    path('formpage/', views.form_page, name='form-page'),
 
     # path('<int:pizza_id>/', views.pizza_detail, name='pizza-detail'),
     # path('testapp/', include('testurlapp.test_urls')),
