@@ -36,22 +36,22 @@ const SearchShotWay=function(start,end, ways) {
 return ROUTES
 };
 
-const ways = [['A', 'B'],
-    ['B', 'D'],
-    ['A', 'C'],
-    ['C', 'F'],
-    ['F', 'D'],
-    ['D', 'E'],
-    ['D', 'G'],
-    ['E', 'G'],
-    ['A', 'F'],
-    ['D', 'C'],
-    ['F', 'H'],
-];
+// const ways = [['A', 'B'],
+//     ['B', 'D'],
+//     ['A', 'C'],
+//     ['C', 'F'],
+//     ['F', 'D'],
+//     ['D', 'E'],
+//     ['D', 'G'],
+//     ['E', 'G'],
+//     ['A', 'F'],
+//     ['D', 'C'],
+//     ['F', 'H'],
+// ];
 
-res=SearchShotWay('A', 'G',ways);
-const minI=res
-    .map(i=> i.length)
-    .reduce((i, y)  => Math.min(i,y), 1000000);
-const min=res.filter((i)=> i.length=== minI);
-console.log(min);
+// res=SearchShotWay('A', 'G',ways);
+// const minI=res
+//     .map(i=> i.length)
+//     .reduce((i, y)  => Math.min(i,y), 1000000);
+// const min=res.filter((i)=> i.length=== minI);
+// console.log(min);
