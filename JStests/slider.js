@@ -60,20 +60,73 @@ class CreateSlider1 {
             this.prevButton.addEventListener('click', this.prevBtnClick.bind(this));
             this.nextButton.addEventListener('click', this.nextBtnClick.bind(this))
         }
+    }
+
+
+
+function CreateSlider2() {
+        imageURLS= [];
+        position= 0;
+        prevButton= null;
+        nextButton= null;
+        slideImage= null;
+        this.nextBtnClick= function (e) {
+            if (position===imageURLS.length-1) position=0;
+            else position++;
+            slideImage.src=imageURLS[position]};
+        this.prevBtnClick= function (e) {
+            if (position===0) position=imageURLS.length-1;
+            else position--;
+            slideImage.src=imageURLS[position]
+        };
+        this.start= function (id, arr) {
+            let el=document.querySelector('div#itk-'+id+'.itk-slider');
+            prevButton=el.querySelector('.prev-btn');
+            nextButton=el.querySelector('.next-btn');
+            slideImage=el.querySelector('img.img');
+            imageURLS=arr;
+            prevButton.addEventListener('click', this.prevBtnClick.bind(this));
+            nextButton.addEventListener('click', this.nextBtnClick.bind(this))
+        }
+    }
+
+
+
+function CreateSlider5() {
+    this.imageURLS = [];
+    this.position = 0;
+    this.prevButton = null;
+    this.nextButton = null;
+    this.slideImage = null;
+    this.nextBtnClick = function (e) {
+        if (this.position === this.imageURLS.length - 1) this.position = 0;
+        else this.position++;
+        this.slideImage.src = this.imageURLS[this.position]
     };
+    this.prevBtnClick = function (e) {
+        if (this.position === 0) this.position = this.imageURLS.length - 1;
+        else this.position--;
+        this.slideImage.src = this.imageURLS[this.position];
+    }
+    this.start = function (id, arr) {
+        let el = document.querySelector('div#itk-' + id + '.itk-slider');
+        this.prevButton = el.querySelector('.prev-btn');
+        this.nextButton = el.querySelector('.next-btn');
+        this.slideImage = el.querySelector('img.img');
+        this.imageURLS = arr;
+        this.prevButton.addEventListener('click', this.prevBtnClick.bind(this));
+        this.nextButton.addEventListener('click', this.nextBtnClick.bind(this))
+    }
+}
 
-
-
-
-
-slider1=CreateSlider()
-slider2=new CreateSlider()
-slider3=new CreateSlider1()
-slider4=new CreateSlider1()
-slider1.start(1, arr)
-slider2.start(2, arr)
-slider3.start(3, arr)
-slider4.start(4, arr)
+slider1=new CreateSlider5();
+slider2=new CreateSlider();
+slider3=new CreateSlider1();
+slider4=new CreateSlider2();
+slider1.start(1, arr);
+slider2.start(2, arr);
+slider3.start(3, arr);
+slider4.start(4, arr);
 
 
 
