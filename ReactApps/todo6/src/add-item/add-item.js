@@ -11,9 +11,9 @@ export default class AddItem extends Component  {
     onSubmit=(e)=>{
         e.preventDefault();
         if (this.state.label!=='')
-        {this.props.addItemClck(this.state.label)
+        {this.props.addItemClck(this.state.label);
         this.setState({label:''})}
-    }
+    };
 
     render() {
         return <form className='item-add-form d-flex' onSubmit={this.onSubmit}>
