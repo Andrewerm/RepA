@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+
+<br>
+{% if form.errors %}
+Неверное имя пользователя и пароль. Пожал. введите правильно.
+{% else %}
+    Пожалуйста ввидете логин и пароль ниже в форму:
+{% endif %}
+
+<form action="" method="post">
+    {% csrf_token %}
+    {{ form|crispy }}
+
+    <button type="submit" class="btn btn-primary"> Войти </button>
+
+
+</form>
+{% endblock %}

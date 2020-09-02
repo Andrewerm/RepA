@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'testurlapp',
     'teststaticapp',
     'validformapp',
+    'authapp',
 ]
 
 MIDDLEWARE = [
@@ -127,4 +128,4 @@ STATICFILE_DIR=os.path.join(BASE_DIR,'static')
 STATICFILES_DIRS=[STATICFILE_DIR,]
 MEDIA_ROOT=os.path.join(BASE_DIR,'media')
 MEDIA_URL='/media/'
-
+LOGIN_REDIRECT_URL='/'

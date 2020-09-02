@@ -1,0 +1,19 @@
+{%  extends 'base.html' %}
+{% load thumbnail %}
+
+{% block title %}
+Детали
+{% endblock %}
+
+
+{% block content %}
+    <h1> {{ content_detail.title }}</h1>
+    {% thumbnail content_detail.image '300' as im %}
+    <a  href="{{ content_detail.image.url }}">
+    <img src="{{ im.url }}">
+    </a>
+    {% endthumbnail %}
+    <br>
+    {{ content_detail.entry|safe }}
+
+{% endblock %}
