@@ -3,7 +3,7 @@ import './todo-list-item.css'
 
 export default class TodoListItem extends Component{
     onLabelClick=()=>{
-            alert(` Done ${this.props.label}`)
+            console.log(` Done ${this.props.label}`)
         }
 
      render() {
