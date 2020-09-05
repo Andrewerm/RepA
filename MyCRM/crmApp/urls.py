@@ -31,6 +31,7 @@ urlpatterns=[
     path('suppliers/', views.supplier_list, name='suppliers_list'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('dashboard2/', views.dashboard2, name='dashboard2'),
+    path('dashboard/pressImportOrders/', views.pressButImportOrders, name='pressImportOrder')
 
 
 ]
