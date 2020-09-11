@@ -1,8 +1,8 @@
 import React from "react";
 
-const WeatherInform=()=>
+const WeatherInform=({weather})=>
 {
-    return <p> Weather Inform </p>
+    return <p> Weather Inform</p>
 }
 
 export default WeatherInform
