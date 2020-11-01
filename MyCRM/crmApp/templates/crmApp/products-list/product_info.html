@@ -1,0 +1,14 @@
+{% extends 'crmApp/base.html' %}
+
+{% block title %}Info about {{ product_info.subject }}{% endblock %}
+
+{% block content %}
+    {{ product_info.subject }}
+    {{ product_info.product_min_price }}
+    {{ product_info.product_max_price }}
+    {{ product_info.gmt_modified }}
+    {{ product_info.gmt_create}}
+    {{ product_detail_info.product_price }}
+
+
+{% endblock %}

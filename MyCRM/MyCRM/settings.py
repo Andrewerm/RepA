@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'crmApp',
     'crispy_forms',
+    'djmoney',
 ]
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
@@ -111,7 +112,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
@@ -124,6 +125,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = '/static/'
 LOGIN_URL=reverse_lazy('crm:login')
 LOGIN_REDIRECT_URL=reverse_lazy('crm:dashboard')
 LOGOUT_URL = reverse_lazy('crm:logout')

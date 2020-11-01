@@ -1,0 +1,24 @@
+{% extends 'crmApp/base.html' %}
+
+{% block title %}Info about {{ order_info.order_id }}{% endblock %}
+
+{% block content %}
+    {{ order_info.order_status }}
+    {{ order_info.gmt_create }}
+    {{ order_info.payment_type }}
+    {{ order_info.fund_status}}
+    {{ order_info.receipt_address }}
+    {{ order_info.shipping_city }}
+    {{ order_info.shipping_index }}
+    <p>Координаты: {{ order_info.coord.latitude }} {{ order_info.coord.longitude }}</p>
+
+    <ul class="list-group">
+    {% for foo in order_info.cdek_pvz  %}
+         <li class="list-group-item"> Код ПВЗ:{{ foo.code }} {{ foo.location.address }} </li>
+    {% endfor %}
+    </ul>
+    {{ order_info.pochta_normalize_adress }}
+    <input type="button" class="btn btn-primary" value=" Создать СДЭК накладную" onclick="document.location.href = 'createCdekOrder/'+{{ order_info.order_id}}"/>
+
+
+{% endblock %}

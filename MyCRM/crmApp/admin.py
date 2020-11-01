@@ -8,6 +8,16 @@ admin.site.register(Series)
 admin.site.register(Suppliers)
 # admin.site.register(Stores)
 
+# admin.site.register(AliOrders)
+admin.site.register(AliOrdersProductList)
+admin.site.register(AliProducts)
+
+@admin.register(AliOrders)
+class AliOrdersAdmin(admin.ModelAdmin):
+    list_display = ('order_id', 'logistics_status', 'gmt_create')
+
+
+
 @admin.register(Brands)
 class BrandsAdmin(admin.ModelAdmin):
     list_display = ('name', 'description')

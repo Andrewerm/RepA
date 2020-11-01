@@ -31,7 +31,11 @@ urlpatterns=[
     path('suppliers/', views.supplier_list, name='suppliers_list'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('dashboard2/', views.dashboard2, name='dashboard2'),
-    path('dashboard/pressImportOrders/', views.pressButImportOrders, name='pressImportOrder')
-
+    path('dashboard/pressImportOrders/', views.pressButImportOrders, name='pressImportOrder'),
+    path('product_list/', views.ProductsList.as_view(), name='products_list'),
+    path('product_info_view/<int:id>', views.productInfoDetail, name='product_info'),
+    path('orders_list/', views.orderList, name='orders_list'),
+    path('order_info/createCdekOrder/<int:id>', views.createCdekOrder, name='create_cdek_order'),
+    path('order_info/<int:id>', views.OrderInfoDetail, name='order_info'),
 
 ]

@@ -1,14 +1,20 @@
 from django.urls import reverse_lazy
-from django.http import HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
-from .models import Brands, Catalog, Stores, Suppliers
+from .models import Brands, Catalog, Stores, Suppliers, AliOrdersProductList, AliProducts, AliOrders
 from .forms import BrandForm, SupplierForm, StoresForm, CatalogForm, LoginForm, UserRegForm
 from django.contrib.auth import authenticate, login, logout, views
 from django.contrib.auth.decorators import login_required
-from MyCRM import settings
+from .servicesCRM import serviceAli
+from django.core.paginator import Paginator
+from services.cdek_services import CdekAPI, CdekOrder
+from services.yandex_services import Geocoder
+
+# сдэк
+Account='0372b3fff5d6707cd1633469403952df'
+Secure_password='afc14015cce5555ce582bf97b963d2d2'
 
 # Create your views here.
 class BrandsView(ListView):
@@ -175,7 +181,7 @@ class StoreEdit(UpdateView):
 #     else:
 #         form=LoginForm()
 #         return render(request, 'registration/login.html', context={'form':form})
-
+#
 # def userLogout(request):
 #     logout(request)
 #     return HttpResponse('разлогинился')
@@ -201,4 +207,73 @@ def userNew(request):
     return render(request, 'registration/newUser.html', context={'form':form})
 
 def pressButImportOrders(request):
+    a=serviceAli()
+    a.updateGroupList()
+    a.updateProducts(1)
+    a.updateOrderList(1)
     return redirect('crm:dashboard')
+
+class ProductsList(ListView):
+    model=AliProducts
+    context_object_name = 'productsList'
+    template_name = 'products-list/products_list.html'
+
+
+def productInfoDetail(request, id):
+    try:
+        product_detail = AliProducts.objects.get(product_id=id)
+        a=serviceAli()
+        productDetailInfo=a.getProduct(id)
+
+    except Exception as err:
+        print(f' ошибка: {err}')
+        return redirect('crm:products_list')
+
+    return render(request, context={'product_info':product_detail, 'product_detail_info':productDetailInfo}, template_name='products-list/product_info.html')
+
+
+# class OrdersList(ListView):
+#     model=AliOrders
+#     context_object_name = 'ordersList'
+#     template_name = 'orders/orders_list.html'
+
+
+def orderList(request):
+    orders = AliOrders.objects.order_by('-gmt_create')
+    paginator = Paginator(orders, 20, orphans=5, allow_empty_first_page=True)
+    if 'page' in request.GET:
+        page_num=request.GET['page']
+    else:
+        page_num = 1
+    page = paginator.get_page(page_num)
+    context = {'page': page, 'data':page.object_list}
+    return render(request, 'orders/orders_list.html', context)
+
+def OrderInfoDetail(request, id):
+    try:
+        a=serviceAli()
+        orderDetailInfo=a.getOrder(id)
+
+    except Exception as err:
+        print(f' ошибка: {err}')
+        return redirect('crm:orders_list')
+
+    return render(request, context={'order_info':orderDetailInfo}, template_name='orders/order_info.html')
+
+def createCdekOrder(request,id):
+    a=CdekAPI(client_id=Account, client_secret=Secure_password)
+    b=serviceAli()
+    orderInfo=b.getOrder(id)
+    d=dict()
+    d['tariff_code']=136
+    d['name']=orderInfo.FIO
+    d['delivery_point']=orderInfo.cdek_pvz[0]['code']
+    d['phone']=orderInfo.phoneNumber
+    d['packages']=orderInfo.product_list
+    d['number']=orderInfo.order_id
+
+    newO=CdekOrder(**d)
+    result=a.new_order(newO)
+    print(result)
+
+    return redirect('crm:order_info', id)

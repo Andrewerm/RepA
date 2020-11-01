@@ -4,44 +4,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+{#    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">#}
+    {% load staticfiles %}
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/fontawesome.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <script src="{% static 'js/bootstrap.min.js'%}"></script>
+    <script src="{% static 'js/fontawesome.min.js'%}"></script>
     <title>{% block title %}Title{% endblock %}</title>
 </head>
 <body>
 
-<div id="header">
-    <span class="logo">Bookmarks</span>
-    {% if request.user.is_authenticated %}
-        <ul class="menu">
-        <li {% if section == "dashboard" %} class="selected"{% endif %}>
-        <a href="{% url "crm:dashboard" %}">My dashboard</a>
-        </li>
-        <li {% if section == "images" %}class="selected"{% endif %}>
-        <a href="#">Images</a>
-        </li>
-        <li {% if section == "people" %}class="selected"{% endif %}>
-        <a href="#">People</a>
-        </li>
-        </ul>
-    {% endif %}
-    <span class="user">
-    {% if request.user.is_authenticated %}
-        Hello {{ request.user.first_name }} ({{ request.user.username }}),
-        <a href="{% url "crm:logout" %}">Logout</a>
-        {% else %}
-        <a href="{% url "crm:login" %}">Log-in</a>
-    {% endif %}
-    </span>
+<div class="navbar navbar-inverse navbar-fixed-top">
+
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-darget=".navbar-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">MyCRM</a>
+        </div>
+{#        <div class="collapse navbar-collapse">#}
+{#            #}
+            <ul class="nav navbar-nav navbar-right">
+                <li class="active"><a href="{% url "crm:dashboard" %}">My dashboard</a> </li>
+                <li><a href="{% url "crm:products_list" %}">Products</a> </li>
+                <li><a href={% url "crm:orders_list" %}>Orders</a></li>
+            </ul>
+{#        </div>#}
+    </div>
 
 </div>
-    <div class="container">
-      <div class="row justify-content-center">
-        <div class="col-4">
-          <hr class="mt-0 mb-4">
+
+{% if request.user.is_authenticated %}
+    Hello {{ request.user.first_name }} ({{ request.user.username }}),
+    <a href="{% url "crm:logout" %}">Logout</a>
+{% else %}
+    <a href="{% url "crm:login" %}">Log-in</a>
+{% endif %}
+
+
+{#    <div class="container">#}
+{#      <div class="row justify-content-center">#}
+{#        <div class="col-15">#}
+{#          <hr class="mt-0 mb-4">#}
           {% block content %}
           {% endblock %}
-        </div>
-      </div>
-    </div>
+{#        </div>#}
+{#      </div>#}
+{#    </div>#}
 </body>
 </html>

@@ -1,0 +1,9 @@
+{% extends 'crmApp/base.html' %}
+
+{% block title %}List of products{% endblock %}
+
+{% block content %}
+{% for item in productsList %}
+    <p><a href=' {% url "crm:product_info" id=item.product_id %}'>{{ item.subject }}</a> </p>
+{% endfor %}
+{% endblock %}
