@@ -55,3 +55,25 @@ class CdekAPI(providerAPI):
         headers['Content-Type']='application/json'
         r=self.resp('POST', url, headers=headers, data=data.encode('UTF-8'))
         return r
+
+
+class  Calc_tarif(providerAPI):
+    BASE_URL = 'https://kit.cdek-calc.ru/api'
+    def __init__(self, **kwargs):
+        self.params=dict()
+        self.params['weight'] =kwargs.get('weight','0.1')
+        self.params['height'] = kwargs.get('height','10')
+        self.params['width'] = kwargs.get('width','10')
+        self.params['length'] = kwargs.get('length','10')
+        self.params['from_post_code'] = kwargs.get('from_post_code')
+        self.params['to_post_code'] = kwargs.get('to_post_code')
+        tarifs='136,137,138,139,10,11,12,1,5,233,234,301,302'
+        self.params['contract'] = kwargs.get('contract', '2')
+        self.params['tariffs'] = kwargs.get('tariffs', tarifs)
+
+    def get_tarif(self):
+        resp = self.resp('GET', self.BASE_URL, params=self.params)
+        self.response=[val for key,val in resp.items() if not val.get('error')]
+        self.response.sort(key=lambda x: x['result']['total_price'])
+        return self.response
+

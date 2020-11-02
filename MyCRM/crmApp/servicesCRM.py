@@ -1,5 +1,5 @@
 from services.ali_services import AliApi
-from services.cdek_services import CdekAPI
+from services.cdek_services import CdekAPI, Calc_tarif
 from services.pochta_services import PochtaApi
 from services.yandex_services import Geocoder
 from abc import ABC, abstractmethod
@@ -103,6 +103,7 @@ class orderAliInfo():
         self.shipping_index=self.receipt_address['zip']
         self.pochta_normalize_adress=self.__pochta_normalize_adress__()
         self.coord=self.__coords__()
+        self.cdek_tarifes=self.calc_tarifes()
 
         # self.products=data['global_aeop_tp_order_product_info_dto']
 
@@ -123,22 +124,13 @@ class orderAliInfo():
     def __pochta_normalize_adress__(self):
         a = PochtaApi(client_id=loginPochta, client_secret=secretPochta, token=tokenPochta)
         m=['zip', 'city', 'detail_address', 'address', 'address2']
-        mas=[]
-        for i in m:
-            if self.receipt_address.get(i):
-                mas.append(self.receipt_address[i])
-        addr=' '. join(mas)
-        res=a.normAddress(addr)
-        return res
+        addr=','.join(list(map(lambda x: self.receipt_address.get(x,''),m)))
+        return a.normAddress(addr)
 
     @property
     def full_normalised_adress(self):
         m=['index', 'region', 'area', 'place', 'location','street', 'house',  'letter', 'corpus','building' ]
-        mas = []
-        for i in m:
-            if self.pochta_normalize_adress.get(i):
-                mas.append(self.pochta_normalize_adress[i])
-        addr = ','.join(mas)
+        addr = ','.join(list(map(lambda x: self.pochta_normalize_adress.get(x,''),m)))
         return addr
 
     @property
@@ -152,6 +144,10 @@ class orderAliInfo():
         addr=self.full_normalised_adress
         a=Geocoder(address=addr)
         return a.get_coords_by_address
+
+    def calc_tarifes(self):
+        a=Calc_tarif(from_post_code='420066', to_post_code=self.shipping_index)
+        return a.get_tarif()
 
 
 class serviceAli():

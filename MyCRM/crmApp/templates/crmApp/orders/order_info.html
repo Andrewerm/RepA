@@ -17,6 +17,12 @@
          <li class="list-group-item"> Код ПВЗ:{{ foo.code }} {{ foo.location.address }} </li>
     {% endfor %}
     </ul>
+    <ul class="list-group">
+    {% for foo in order_info.cdek_tarifes  %}
+         <li class="list-group-item"> Тариф: {{ foo.info.name }} {{ foo.result.price }} </li>
+    {% endfor %}
+    </ul>
+    cdek_tarifes
     {{ order_info.pochta_normalize_adress }}
     <input type="button" class="btn btn-primary" value=" Создать СДЭК накладную" onclick="document.location.href = 'createCdekOrder/'+{{ order_info.order_id}}"/>
 

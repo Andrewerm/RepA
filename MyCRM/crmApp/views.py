@@ -265,7 +265,7 @@ def createCdekOrder(request,id):
     b=serviceAli()
     orderInfo=b.getOrder(id)
     d=dict()
-    d['tariff_code']=136
+    d['tariff_code']=orderInfo.cdek_tarifes[0]['info']['id']
     d['name']=orderInfo.FIO
     d['delivery_point']=orderInfo.cdek_pvz[0]['code']
     d['phone']=orderInfo.phoneNumber
