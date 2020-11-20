@@ -1,12 +1,10 @@
 from services.common import providerAPI
-import time, json
-
-
+import json
 
 class CdekOrder():
     def __init__(self, **params):
         self.data=dict()
-        self.data['orderID']='aecrm'+str(time.time())
+        # self.data['orederID']='aecrm'+str(time.time()) хз почему раньше работало. потом стало лишним
         self.data['tariff_code']=params['tariff_code'] or 136
         self.data['shipment_point']=params.get('shipment_point') or 'SAR4'
         self.data['delivery_point']=params.get('delivery_point')
@@ -14,7 +12,11 @@ class CdekOrder():
         self.data['value']=params.get('value') or 0 # сумма дополнительного сбора за доставку
         self.data['seller']={'name':'ИП Ижболдин А.А.', 'inn':'165053023146', 'phone':'+79063337333', 'ownership_form':63}
         self.data['recipient']={'name': params['name'],'phones': [{'number': params['phone']}]}
-        self.data['packages']=params.get('packages')
+        packages=params['packages']
+        packages[0]['length']=10
+        packages[0]['width'] = 10
+        packages[0]['height'] = 5
+        self.data['packages']=packages
         self.data['number']=params.get('number')
 
     def retJson(self):
@@ -53,8 +55,7 @@ class CdekAPI(providerAPI):
         url = self.BASE_URL + self.REQORDER
         headers= self.bearer
         headers['Content-Type']='application/json'
-        r=self.resp('POST', url, headers=headers, data=data.encode('UTF-8'))
-        return r
+        return self.resp('POST', url, headers=headers, data=data.encode('UTF-8'))
 
 
 class  Calc_tarif(providerAPI):
@@ -71,9 +72,11 @@ class  Calc_tarif(providerAPI):
         self.params['contract'] = kwargs.get('contract', '2')
         self.params['tariffs'] = kwargs.get('tariffs', tarifs)
 
-    def get_tarif(self):
-        resp = self.resp('GET', self.BASE_URL, params=self.params)
-        self.response=[val for key,val in resp.items() if not val.get('error')]
-        self.response.sort(key=lambda x: x['result']['total_price'])
-        return self.response
+    @classmethod
+    def get_tarif(cls):
+        resp = cls.resp('GET', cls.BASE_URL, params=cls.params)
+        cls.response=[val for key,val in resp.items() if not val.get('error')]
+
+        cls.response.sort(key=lambda x: float((x['result']['total_price']).replace(',','')))
+        return cls.response
 

@@ -1,30 +1,34 @@
 {% extends 'crmApp/base.html' %}
 
-{% block title %}Info about {{ order_info.order_id }}{% endblock %}
+{% block title %}Info about {{ ali_order_info.order_id }}{% endblock %}
 
 {% block content %}
-    {{ order_info.order_status }}
-    {{ order_info.gmt_create }}
-    {{ order_info.payment_type }}
-    {{ order_info.fund_status}}
-    {{ order_info.receipt_address }}
-    {{ order_info.shipping_city }}
-    {{ order_info.shipping_index }}
-    <p>Координаты: {{ order_info.coord.latitude }} {{ order_info.coord.longitude }}</p>
+    <ul>
+    <li>order_status {{ order_info.ali_order_status }}</li>
+    <li>gmt_create {{ order_info.ali_gmt_create }}</li>
+    <li>payment_type {{ order_info.ali_payment_type }}</li>
+    <li>fund_status {{ order_info.ali_fund_status}}</li>
+    <li>receipt_address {{ order_info.ali_receipt_address }}</li>
+    <li>shipping city {{ order_info.ali_receipt_address.city }}</li>
+    <li>shipping_index {{ order_info.ali_receipt_address.zip }}</li>
+    <li>Координаты: {{ order_info.ya_coord.latitude }} {{ order_info.ya_coord.longitude }}</li>
+    </ul>
+    <form action="" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" class="btn btn-primary" value=" Создать СДЭК накладную"/>
+{#           onclick="document.location.href = 'createCdekOrder/'+{{ order_info.order_id}}"#}
 
-    <ul class="list-group">
-    {% for foo in order_info.cdek_pvz  %}
-         <li class="list-group-item"> Код ПВЗ:{{ foo.code }} {{ foo.location.address }} </li>
-    {% endfor %}
-    </ul>
-    <ul class="list-group">
-    {% for foo in order_info.cdek_tarifes  %}
-         <li class="list-group-item"> Тариф: {{ foo.info.name }} {{ foo.result.price }} </li>
-    {% endfor %}
-    </ul>
-    cdek_tarifes
+    </form>
     {{ order_info.pochta_normalize_adress }}
-    <input type="button" class="btn btn-primary" value=" Создать СДЭК накладную" onclick="document.location.href = 'createCdekOrder/'+{{ order_info.order_id}}"/>
-
-
+<script>
+document.getElementById('id_selectShippingFrom').addEventListener('change', function() {
+      id_selectShippingFrom.querySelectorAll('li').forEach(item=>{
+        const elem=item.querySelector('label input');
+        document.getElementById(`id_${elem.value}`).parentElement.hidden=!elem.checked
+         })
+        });
+id_selectTarifKazan.parentElement.hidden='hidden';
+id_selectTarifChelny.parentElement.hidden='hidden'
+</script>
 {% endblock %}

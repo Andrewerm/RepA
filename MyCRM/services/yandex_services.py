@@ -1,4 +1,5 @@
-from services.common import providerAPI
+from services.common import providerAPI, check_funcs
+
 
 yandexApiKey='ae46126c-27e7-419c-a44c-c503864debe8'
 
@@ -13,6 +14,7 @@ class Geocoder(providerAPI):
         self.session_params={'apikey':yandexApiKey, 'format':'json'}
 
     @property
+    @check_funcs
     def get_coords_by_address(self):
         s='&'.join([f'{i}={self.session_params[i]}'  for i in self.session_params])
         res=self.resp('GET', f'{self.BASE_URL}?{s}')

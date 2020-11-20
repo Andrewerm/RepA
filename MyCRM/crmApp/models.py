@@ -1,6 +1,7 @@
 from djmoney.models.fields import MoneyField
 from django.db import models
 from django.urls import reverse
+import json
 
 # Сущность Бренды
 class Brands(models.Model):
@@ -130,6 +131,26 @@ class AliOrders(models.Model):
         e=[i.product_name for i in a]
         g='| '.join(e)
         return g
+
+class AliOrdersAddInformation(models.Model):
+    order=models.OneToOneField(AliOrders, on_delete=models.CASCADE, primary_key=True)
+    buyer_info=models.CharField(verbose_name="buyer info", max_length=100)
+    gmt_modified=models.DateTimeField(verbose_name='modified time, US pacific time', null=True)
+    receipt_address=models.CharField(verbose_name="receipt address", max_length=200)
+    gmt_trade_end=models.DateTimeField(verbose_name='Order end time', null=True)
+    buyerloginid=models.CharField(verbose_name="buyer login id", max_length=30)
+    order_status=models.CharField(verbose_name="Order Status", max_length=30)
+    coord=models.CharField(verbose_name='Координаты адреса покупателя', max_length=30, blank=True, default='')
+    full_normalised_adress=models.CharField(verbose_name='Нормализованный адрес', max_length=150, blank=True, default='')
+
+    def FIO(self):
+        return eval(self.receipt_address)['contact_person']
+
+    def shipping_city(self):
+        return eval(self.receipt_address).get('city','')
+
+    def shipping_index(self):
+        return eval(self.receipt_address).get('zip','')
 
 
 

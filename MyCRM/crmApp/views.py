@@ -4,14 +4,17 @@ from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from .models import Brands, Catalog, Stores, Suppliers, AliOrdersProductList, AliProducts, AliOrders
-from .forms import BrandForm, SupplierForm, StoresForm, CatalogForm, LoginForm, UserRegForm
+from .forms import BrandForm, SupplierForm, StoresForm, CatalogForm, LoginForm, UserRegForm, OrderInfoForm
 from django.contrib.auth import authenticate, login, logout, views
 from django.contrib.auth.decorators import login_required
-from .servicesCRM import serviceAli
+from .servicesCRM import serviceAli, check_funcs, orderAliInfo
 from django.core.paginator import Paginator
 from services.cdek_services import CdekAPI, CdekOrder
-from services.yandex_services import Geocoder
 
+
+# пункты отправления посылок
+SOURCE_CITIES = {'selectTarifSaratov':'SAR4', 'selectTarifKazan':'KZN37',
+                 'selectTarifChelny': 'NCHL6'}
 # сдэк
 Account='0372b3fff5d6707cd1633469403952df'
 Secure_password='afc14015cce5555ce582bf97b963d2d2'
@@ -208,8 +211,8 @@ def userNew(request):
 
 def pressButImportOrders(request):
     a=serviceAli()
-    a.updateGroupList()
-    a.updateProducts(1)
+    # a.updateGroupList()
+    #a.updateProducts(1)
     a.updateOrderList(1)
     return redirect('crm:dashboard')
 
@@ -249,31 +252,58 @@ def orderList(request):
     context = {'page': page, 'data':page.object_list}
     return render(request, 'orders/orders_list.html', context)
 
+@check_funcs
 def OrderInfoDetail(request, id):
-    try:
-        a=serviceAli()
-        orderDetailInfo=a.getOrder(id)
+    def list_of_choises(): # делаем списки для выбора ПВЗ в выпадающем меню
+        for i in SOURCE_CITIES:
+            form.fields[i].choices=list(map(lambda x: (x['info']['id'], x['info']['name'] + ' - ' + x['result']['price']),
+                       orderDetailInfo.cdek_tarifes[i]))
+        form.fields['selectPVZ'].choices = list(map(lambda x: (x['code'], x['location']['address']), orderDetailInfo.cdek_pvz))
+    ali = serviceAli()
+    orderDetailInfo=orderAliInfo(id)
+    # print(orderDetailInfo)
+    # orderDetailInfo = ali.getOrder(id)
+    if request.method=='GET':
+        form = OrderInfoForm(initial={'recieverFIO':orderDetailInfo.FIO, 'insurance':0})
+        return render(request, context={'order_info': orderDetailInfo, 'form': form},
+                      template_name='orders/order_info.html')
+    else:
+        form=OrderInfoForm(request.POST)
+        list_of_choises()
+        if form.is_valid:
+            cdek = CdekAPI(client_id=Account, client_secret=Secure_password)
+            d = dict()
+            selectedShippingFrom=form.data['selectShippingFrom']
+            selectedTariffCode=form.data[selectedShippingFrom]
+            d['tariff_code'] =selectedTariffCode
+            d['name'] = form.data['recieverFIO']
+            d['delivery_point'] =form.data['selectPVZ']
+            d['phone'] = orderDetailInfo.phoneNumber
+            d['packages'] = orderDetailInfo.product_list(form.data['insurance'])
+            d['number'] = orderDetailInfo.order_id
+            d['shipment_point']=SOURCE_CITIES[form.data['selectShippingFrom']]
+            newO = CdekOrder(**d)
+            result = cdek.new_order(newO)
+            print(result)
+            return render(request, context={'order_info': orderDetailInfo, 'form': form},
+                      template_name='orders/order_info.html')
 
-    except Exception as err:
-        print(f' ошибка: {err}')
-        return redirect('crm:orders_list')
 
-    return render(request, context={'order_info':orderDetailInfo}, template_name='orders/order_info.html')
 
-def createCdekOrder(request,id):
-    a=CdekAPI(client_id=Account, client_secret=Secure_password)
-    b=serviceAli()
-    orderInfo=b.getOrder(id)
-    d=dict()
-    d['tariff_code']=orderInfo.cdek_tarifes[0]['info']['id']
-    d['name']=orderInfo.FIO
-    d['delivery_point']=orderInfo.cdek_pvz[0]['code']
-    d['phone']=orderInfo.phoneNumber
-    d['packages']=orderInfo.product_list
-    d['number']=orderInfo.order_id
-
-    newO=CdekOrder(**d)
-    result=a.new_order(newO)
-    print(result)
-
-    return redirect('crm:order_info', id)
+# def createCdekOrder(request,id):
+#     a=CdekAPI(client_id=Account, client_secret=Secure_password)
+#     b=serviceAli()
+#     orderInfo=b.getOrder(id)
+#     d=dict()
+#     d['tariff_code']=orderInfo.cdek_tarifes['fromSaratov'][0]['info']['id']
+#     d['name']=orderInfo.FIO
+#     d['delivery_point']=orderInfo.cdek_pvz[0]['code']
+#     d['phone']=orderInfo.phoneNumber
+#     d['packages']=orderInfo.product_list
+#     d['number']=orderInfo.order_id
+#
+#     newO=CdekOrder(**d)
+#     result=a.new_order(newO)
+#     print(result)
+#
+#     return redirect('crm:order_info', id)

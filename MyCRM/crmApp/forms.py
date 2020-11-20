@@ -33,3 +33,15 @@ class UserRegForm(UserCreationForm):
         model=User
         fields=['username','first_name', 'last_name', 'email']
 
+
+class OrderInfoForm(forms.Form):
+    SOURCE_CITIES=(('selectTarifSaratov','Из Саратова'), ('selectTarifKazan', 'Из Казани'), ('selectTarifChelny', 'Из Н.Челнов'))
+    recieverFIO=forms.CharField(label='ФИО получателя', max_length=30)
+    selectPVZ=forms.ChoiceField(label='ПВЗ СДЭК получателя')
+    selectShippingFrom=forms.ChoiceField(label='Город отправки', widget=forms.RadioSelect, choices=SOURCE_CITIES, initial=SOURCE_CITIES[0])
+    selectTarifSaratov=forms.ChoiceField(label='Тариф СДЭК из Саратова')
+    selectTarifKazan = forms.ChoiceField(label='Тариф СДЭК из Казани')
+    selectTarifChelny = forms.ChoiceField(label='Тариф СДЭК из Н. Челнов')
+    insurance=forms.IntegerField(label='Страховка груза (руб.):', required=False)
+
+

@@ -35,7 +35,7 @@ urlpatterns=[
     path('product_list/', views.ProductsList.as_view(), name='products_list'),
     path('product_info_view/<int:id>', views.productInfoDetail, name='product_info'),
     path('orders_list/', views.orderList, name='orders_list'),
-    path('order_info/createCdekOrder/<int:id>', views.createCdekOrder, name='create_cdek_order'),
+    # path('order_info/createCdekOrder/<int:id>', views.createCdekOrder, name='create_cdek_order'),
     path('order_info/<int:id>', views.OrderInfoDetail, name='order_info'),
 
 ]
