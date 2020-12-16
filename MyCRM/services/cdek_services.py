@@ -1,27 +1,21 @@
 from services.common import providerAPI
 import json
+from datetime import datetime, timedelta, timezone
+from crmApp.models import tokensApi
 
 class CdekOrder():
     def __init__(self, **params):
-        self.data=dict()
-        # self.data['orederID']='aecrm'+str(time.time()) хз почему раньше работало. потом стало лишним
-        self.data['tariff_code']=params['tariff_code'] or 136
-        self.data['shipment_point']=params.get('shipment_point') or 'SAR4'
-        self.data['delivery_point']=params.get('delivery_point')
+        self.data=params
         self.data['delivery_recipient_cost']=params.get('delivery_recipient_cost') or {'value':0}
         self.data['value']=params.get('value') or 0 # сумма дополнительного сбора за доставку
         self.data['seller']={'name':'ИП Ижболдин А.А.', 'inn':'165053023146', 'phone':'+79063337333', 'ownership_form':63}
         self.data['recipient']={'name': params['name'],'phones': [{'number': params['phone']}]}
-        packages=params['packages']
-        packages[0]['length']=10
-        packages[0]['width'] = 10
-        packages[0]['height'] = 5
-        self.data['packages']=packages
-        self.data['number']=params.get('number')
+        self.data['packages'][0]['length']=10
+        self.data['packages'][0]['width'] = 10
+        self.data['packages'][0]['height'] = 5
 
     def retJson(self):
-        d=json.dumps(self.data)
-        return d
+        return json.dumps(self.data)
 
 
 
@@ -31,16 +25,34 @@ class CdekAPI(providerAPI):
     REQURL='/deliverypoints'
     REQORDER='/orders'
 
+    # def __init__(self, **kwargs):
+    #     self.auth_params=kwargs
+    #     self.get_token_from_base()
+
+    # def get_token_from_base(self):
+    #     data, created=tokensApi.objects.get_or_create(nameApi='cdek')
+    #     if created or not data.token or data.data_expires<datetime.now(timezone.utc):
+    #         # если в БД ещё нет записи cdek или есть, но токена нет, или он просрочен
+    #         self.get_token()
+    #         data.token=self.session_params['access_token']
+    #         delta = timedelta(seconds=int(self.session_params['expires_in']))
+    #         data.data_expires=datetime.now(timezone.utc)+delta
+    #         data.save()
+    #         print('Получаем новый сессионный ключ от СДЭК')
+    #     else:
+    #         # если токен в БД есть и не просрочен
+    #         self.session_params['access_token']=data.token
+    #         print('Используем старый сессионный ключ от СДЭК')
+
+
     def GET_PVZ(self, **params):
-        if not self.check_time_session_valid():
-            self.get_token()
+
         url = self.BASE_URL + self.REQURL
         res=self.resp('GET', url, headers=self.bearer, params=params)
         return res
 
-    def Get_order_info(self, **params):
-        if not self.check_time_session_valid():
-            self.get_token()
+    def get_order_info(self, **params):
+        self.get_token()
         url = self.BASE_URL + self.REQORDER
         if params.get('uuid'):
             url+= '/'+params['uuid']
@@ -50,8 +62,7 @@ class CdekAPI(providerAPI):
 
     def new_order(self, newOrderData):
         data=newOrderData.retJson()
-        if not self.check_time_session_valid():
-            self.get_token()
+        self.get_token()
         url = self.BASE_URL + self.REQORDER
         headers= self.bearer
         headers['Content-Type']='application/json'
@@ -60,7 +71,11 @@ class CdekAPI(providerAPI):
 
 class  Calc_tarif(providerAPI):
     BASE_URL = 'https://kit.cdek-calc.ru/api'
-    def __init__(self, **kwargs):
+    def __init__(self):
+        pass
+
+
+    def get_tarif(self,  **kwargs):
         self.params=dict()
         self.params['weight'] =kwargs.get('weight','0.1')
         self.params['height'] = kwargs.get('height','10')
@@ -71,12 +86,8 @@ class  Calc_tarif(providerAPI):
         tarifs='136,137,138,139,10,11,12,1,5,233,234,301,302'
         self.params['contract'] = kwargs.get('contract', '2')
         self.params['tariffs'] = kwargs.get('tariffs', tarifs)
-
-    @classmethod
-    def get_tarif(cls):
-        resp = cls.resp('GET', cls.BASE_URL, params=cls.params)
-        cls.response=[val for key,val in resp.items() if not val.get('error')]
-
-        cls.response.sort(key=lambda x: float((x['result']['total_price']).replace(',','')))
-        return cls.response
+        resp = self.resp('GET', self.BASE_URL, params=self.params)
+        self.response=[val for key,val in resp.items() if not val.get('error')]
+        self.response.sort(key=lambda x: float((x['result']['total_price']).replace(',','')))
+        return self.response
 

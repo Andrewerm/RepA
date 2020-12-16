@@ -3,7 +3,9 @@ from services.cdek_services import CdekAPI, Calc_tarif
 from services.pochta_services import PochtaApi
 from services.yandex_services import Geocoder
 from abc import ABC, abstractmethod
-from .models import AliProducts, AliOrders, AliOrdersProductList, AliGroupList, AliChildGroupList, AliOrdersAddInformation
+from .models import AliProducts, AliOrders, AliOrdersProductList,\
+    AliGroupList, AliChildGroupList, AliOrdersDetailedInformation
+from django.db.models.query import QuerySet
 from datetime import datetime, timedelta
 from djmoney.money import Money
 import re
@@ -22,6 +24,11 @@ tokenPochta='IomDCsxKO_jjc3yx7eocmSZ3FYDIMMGn'
 loginPochta='andrewerm@yandex.ru'
 secretPochta='531930Ab-'
 
+NOPVZ=[{'code':'000', 'location':{'address': 'Нет ПВЗ' }}]
+DEPARTURE_CITIES=[{'id':'fromSaratov','name': 'Саратов','PVZ':'SAR4', 'index':'410012'},
+                  {'id':'fromKazan','name': 'Казань','PVZ':'KZN37', 'index':'420066'},
+                  {'id':'fromChelny','name':'Набережные Челны','PVZ':'NCHL6', 'index':'423802'}]
+
 def check_funcs(func):
     import time
     def wrapper(*args, **kwargs):
@@ -33,7 +40,31 @@ def check_funcs(func):
         return return_value
     return wrapper
 
+# декоратор - если возвращаемое значение строка и похожа на объект JSON, то преобразуем в dict
+def eval_handler(func):
+    def wrapper(*args, **kwargs):
+        return_value = func(*args, **kwargs)
+        if type(return_value) is str and return_value and (return_value[0] == '{' or return_value[0] == '['):
+                  return eval(return_value)
+        else:
+            return return_value
+    return wrapper
 
+
+def aliStrToDate(dict, strTime, delta):
+        for i in strTime:
+            t=dict.get(i)
+            if t:
+                dt=datetime.strptime(f'{t} {delta}', '%Y-%m-%d %H:%M:%S %z')
+                dict[i]=dt
+        return dict
+
+def simpleMoneyToMoneyField(dict, simpleMoney):
+        for i in simpleMoney:
+            s=dict.get(i)
+            if s:
+                dict[i]=Money(float(s['amount']), s['currency_code'])
+        return dict
 
 class AliDataIterations(ABC):
     def __iter__(self):
@@ -101,116 +132,116 @@ class iterGroupList(AliDataIterations):
         self.page_size = len(self.data)
 
 class orderAliInfo():
-    def __init__(self, order_id):
-        self.order_id=order_id
-        #self.aliorder=AliOrdersAddInformation
-        self.aliorderdetailed=AliOrdersAddInformation.objects.get_or_create(order_id=self.order_id)[0]
-        # self.aliorderproducts=AliOrdersProductList.objects.get(main_order=self.order_id)
-        self.aliAPIsession = AliApi(app_key=appAliKey, secret=Alisecret, sessionkey=AlisSessionKey)
-        self.__fieldsAliOrders__=[i.name for i in AliOrders._meta.get_fields()]
-        self.__fieldsAliOrdersAddInformations__ = [i.name for i in AliOrdersAddInformation._meta.get_fields()]
-        self.__fieldsAliOrdersProductList__ = [i.name for i in AliOrdersProductList._meta.get_fields()]
-        # , AliOrdersProductList, AliGroupList, AliChildGroupList, AliOrdersAddInformation
-        # self.buyer_info=data['buyer_info']
-        # self.gmt_modified=data['gmt_modified']
-        # self.gmt_create=data['gmt_create']
-        # self.receipt_address=data['receipt_address']
-        # self.logistic_info_list=data['logistic_info_list']
-        # self.order_status=data['order_status']
-        # self.payment_type=data.get('payment_type')
-        # self.fund_status=data['fund_status']
-        self.FIO=self.aliorderdetailed.FIO()
-        # self.receipt_address=eval(self.aliorderdetailed.receipt_address)
-        # self.phoneNumber=self.receipt_address['phone_country']+self.receipt_address['mobile_no']
-        self.shipping_city=self.aliorderdetailed.shipping_city()
-        self.shipping_index=self.aliorderdetailed.shipping_index()
-        # self.shipping_index=self.receipt_address['zip']
-        # self.pochta_normalize_adress=self.__pochta_normalize_adress__()
-        # self.coord=self.__coords__()
-        # self.products=data['global_aeop_tp_order_product_info_dto']
-
 
     # обновление данных из таблицы кастомных данных
     def __getAliDetailInfoOrder__(self):
             result=self.aliAPIsession.aliOrderInfo(self.order_id)['aliexpress_solution_order_info_get_response']['result']['data']
-            inBD={item:result[item] for item in result if item in self.__fieldsAliOrdersAddInformations__}
-            return inBD
+            inBD={item:result[item] for item in result if item in self.__fieldsAliOrdersDetailedInformations__}
+            t=('gmt_modified', 'gmt_create', 'gmt_trade_end')
+            result2 = aliStrToDate(inBD,t, '-0700')
+            return result2
 
-
-    @property
-    def pochta_normalised_adress(self):
+    # нормализация адреса сервисом Почты РФ
+    def __normalised_adress__(self):
         a = PochtaApi(client_id=loginPochta, client_secret=secretPochta, token=tokenPochta)
-        m=['index', 'region', 'area', 'place', 'location','street', 'house',  'letter', 'corpus','building' ]
-        addr = ','.join(list(map(lambda x: self.pochta_normalize_adress.get(x,''),m)))
-        return a.normAddress(addr)
+        addres_from_ali=self.alidetailinfo_receipt_address
+        m=['zip', 'country', 'province', 'city', 'detail_address', 'address2' ]
+        addr = ','.join(list(map(lambda x: addres_from_ali.get(x,''),m)))
+        pochtaaddr=a.normAddress(addr)
+        if pochtaaddr['quality-code']=='GOOD':
+            m=['index', 'region', 'area','place',  'street', 'house', 'room']
+            full_normalized_address = ','.join(list(map(lambda x: pochtaaddr.get(x,''),m)))
+        else:
+            full_normalized_address=pochtaaddr['original-address']
+        return {'normalized_address':pochtaaddr, 'full_normalized_address':full_normalized_address}
+
+    def __coords__(self):
+        a = Geocoder(address=self.pochta_full_normalized_address)
+        return {'coord':a.get_coords_by_address}
 
 
+    def __cdek_pvz__(self):
+        def calc_dist(inp): # расчёт дистанции от адреса получателя до СДЭК
+            ax=float(self.ya_coord['longitude'])
+            bx=float(inp['location']['longitude'])
+            ay=float(self.ya_coord['latitude'])
+            by=float(inp['location']['latitude'])
+            return ((ax-bx)**2+(ay-by)**2)**(1/2)
+        a=CdekAPI(client_id=Account, client_secret=Secure_password)
+        listOfPVZ=a.GET_PVZ(postal_code=self.pochta_normalized_address['index'])
+        if listOfPVZ:
+            listOfPVZ.sort(key=calc_dist)  # сортируем по дистанции до адреса получателя
+            return {'pvz': listOfPVZ, 'isPVZ': 1}  # если есть ПВЗ, то возвращаем признак 1
+        else:
+            return {'pvz': NOPVZ, 'isPVZ': 2}
+        # если возвращется 0 ПВЗ, то возвращаем признак 2
+
+
+    def __cdek_order_status__(self):
+        a=CdekAPI(client_id=Account, client_secret=Secure_password)
+        uuid=self.cdekorderresponse_cdekResponse
+        res=a.get_order_info(uuid=uuid['entity']['uuid'])
+        return {'cdekStatus':res}
+
+
+    def __cdek_order_response__(self):
+        return getattr(AliOrdersDetailedInformation.objects.get(order=self.order_id),'cdekResponse')
+
+    def __cdektarifes__(self):
+        a=Calc_tarif()
+        res={i['id']: a.get_tarif(from_post_code=i['index'],
+                                              to_post_code=self.pochta_normalized_address['index']) for i in DEPARTURE_CITIES}
+        return {'tarifes':res}
+
+    def __aliorders__(self):
+        a = AliOrders.objects.get(order_id=self.order_id)
+        return a
+
+    def __aliordersproductlist__(self):
+        a = AliOrdersProductList.objects.filter(main_order=self.order_id)
+        return a
+
+    def cdek_response_save(self, response):
+        a=AliOrdersDetailedInformation.objects.get(order=self.order_id)
+        a.cdekResponse=response
+        a.save(update_fields=['cdekResponse'])
+
+
+    def __init__(self, order_id):
+        self.order_id=order_id
+        self.aliAPIsession = AliApi(app_key=appAliKey, secret=Alisecret, sessionkey=AlisSessionKey)
+        self.__fieldsAliOrders__=[i.name for i in AliOrders._meta.get_fields()]
+        self.__fieldsAliOrdersDetailedInformations__ = [i.name for i in AliOrdersDetailedInformation._meta.get_fields()]
+        self.__fieldsAliOrdersProductList__ = [i.name for i in AliOrdersProductList._meta.get_fields()]
+        self.__allFields__=[*self.__fieldsAliOrders__, *self.__fieldsAliOrdersDetailedInformations__, *self.__fieldsAliOrdersProductList__ ]
+
+    @eval_handler
     def __getattr__(self, item):
-        def evalHandler(s):
-            if type(s) is str:
-                if s[0]=='{':
-                    s=eval(s)
-            return s
+        SERVICES = {'alidetailinfo': self.__getAliDetailInfoOrder__, 'pochta': self.__normalised_adress__,
+                    'ya': self.__coords__, 'cdek':self.__cdek_pvz__,
+                    'cdektarif':self.__cdektarifes__, 'aliorders':self.__aliorders__,
+                    'aliordersproductlist': self.__aliordersproductlist__,
+                    'cdekorderresponse':self.__cdek_order_response__,
+                    'cdekorderstatus': self.__cdek_order_status__}
         service, *rest=item.split('_') # service - имя сервиса в аттрибуте
-        attr=rest.join('_') # attr - сам аттрибут
+        attr='_'.join(rest) # attr - сам аттрибут
         print(f' сервис: {service}, аттрибут: {attr}')
 
-
-        if item in self.__fieldsAliOrders__:
-            return AliOrders.objects.get(order_id=self.order_id).__getattribute__(item)
-        else:
-            if item in self.__fieldsAliOrdersAddInformations__: # если искомый атрибут есть в таблице доп сведений
-                res=self.aliorderdetailed.__getattribute__(item) #находим его значение
-                if res: # если оно не пустое
-                    return evalHandler(res) #возвращаем
-                else:
-                    data=self.__getAliDetailInfoOrder__() # получаем из AliAPI в словарь данные по таблице AliOrdersAddInformation
-                    # data['pochta_normalize_adress'] = self.__pochta_normalize_adress__()
-                    data['coord'] = self.__coords__()
-                    AliOrdersAddInformation.objects.update_or_create(order=self.order_id, defaults=data)
-                    return evalHandler(data[item])
+        if service not in SERVICES or attr not in self.__allFields__: # если нет такого маршрута
+             raise AttributeError(f'такого сервиса {service} с аттрибутом {attr} нет')
+        # ищем аттрибут в базе, если там пустая строка, то запрашшиваем в API и записываем в базу
+        if service in ('alidetailinfo', 'pochta', 'ya', 'cdek', 'cdektarif','cdekorderresponse','cdekorderstatus'):
+            return getattr(AliOrdersDetailedInformation.objects.get_or_create(order_id=self.order_id)[0], attr)\
+            or getattr(AliOrdersDetailedInformation.objects.update_or_create(order=self.order_id, defaults=SERVICES[service]())[0],attr)
+        if service in ('aliorders', 'aliordersproductlist'):
+            res=SERVICES[service]()
+            if isinstance(res, QuerySet):
+                return [getattr(i,attr) for i in res]
             else:
-                if item in self.__fieldsAliOrdersProductList__:
-                    return AliOrdersProductList.objects.get(main_order=self.order_id).__getattribute__(item)
-                else:
-                    raise AttributeError(item)
+                return getattr(res, attr)
 
-
-
-    # def __getCdekTarifes__(self, toPostCode):
-    #     CITIES_FROM = {'fromKazan': '420066', 'fromSaratov': '410012', 'fromChelny': '423802'}
-    #     res = {item: Calc_tarif(from_post_code=CITIES_FROM[item],
-    #                             to_post_code='121000').get_tarif() for item in CITIES_FROM}
-    #     # fromKazan=Calc_tarif(from_post_code='420066', to_post_code=self.shipping_index).get_tarif()
-    #     # fromSaratov = Calc_tarif(from_post_code='410012', to_post_code=self.shipping_index)
-    #     # fromChelny= Calc_tarif(from_post_code='423802', to_post_code=self.shipping_index)
-    #     self.cdek_tarifes=res
-
-
-    # @property
-    # def cdek_pvz(self):
-    #     def calc_dist(inp): # расчёт дистанции от адреса получателя до СДЭК
-    #         ax=float(self.coord['longitude'])
-    #         bx=float(inp['location']['longitude'])
-    #         ay=float(self.coord['latitude'])
-    #         by=float(inp['location']['latitude'])
-    #         return ((ax-bx)**2+(ay-by)**2)**(1/2)
-    #     a=CdekAPI(client_id=Account, client_secret=Secure_password)
-    #     listOfPVZ=a.GET_PVZ(postal_code=self.receipt_address['zip'])
-    #     listOfPVZ.sort(key=calc_dist) # сортируем по дистанции до адреса получателя
-    #     return listOfPVZ
-
-
-    # def __pochta_normalize_adress__(self):
-    #     a = PochtaApi(client_id=loginPochta, client_secret=secretPochta, token=tokenPochta)
-    #     m=['zip', 'city', 'detail_address', 'address', 'address2']
-    #     addr=','.join(list(map(lambda x: self.receipt_address.get(x,''),m)))
-    #     return a.normAddress(addr)
-
-
-
-    def product_list(self, insurance):
-        products=AliOrdersProductList.objects.filter(main_order=self.order_id)
+    def product_list_for_cdek(self, insurance):
+        products=self.__aliordersproductlist__()
         weight=int(100/products.count())
         cost=int(int(insurance)/products.count())
         res=[{'name': 'Часы Восток', 'ware_key': re.search('\d{6}', item.product_name)[0],
@@ -218,37 +249,12 @@ class orderAliInfo():
         return [{'number': '001', 'weight': 100, 'items': res }]
 
 
-    def __coords__(self):
-        addr=self.full_normalised_adress
-        a=Geocoder(address=addr)
-        return a.get_coords_by_address
-
-    @check_funcs
-    def calc_tarifes(self):
-        fromKazan=Calc_tarif(from_post_code='420066', to_post_code=self.shipping_index)
-        fromSaratov = Calc_tarif(from_post_code='410012', to_post_code=self.shipping_index)
-        fromChelny= Calc_tarif(from_post_code='423802', to_post_code=self.shipping_index)
-        return {'selectTarifKazan':fromKazan.get_tarif(), 'selectTarifSaratov':fromSaratov.get_tarif(), 'selectTarifChelny':fromChelny.get_tarif() }
-
 
 class serviceAli():
     def __init__(self):
         self.session = AliApi(app_key=appAliKey, secret=Alisecret, sessionkey=AlisSessionKey)
 
-    def __StrToDate__(self, dict, strTime, delta):
-        for i in strTime:
-            t=dict.get(i)
-            if t:
-                dt=datetime.strptime(f'{t} {delta}', '%Y-%m-%d %H:%M:%S %z')
-                dict[i]=dt
-        return dict
 
-    def __SimpleMoneyToMoneyField__(self, dict, simpleMoney):
-        for i in simpleMoney:
-            s=dict.get(i)
-            if s:
-                dict[i]=Money(float(s['amount']), s['currency_code'])
-        return dict
 
     @check_funcs
     def updateOrderList(self, depthUpdatingDays):
@@ -260,8 +266,8 @@ class serviceAli():
             print(j, ' ' , i)
             t=('gmt_update', 'gmt_send_goods_time', 'gmt_pay_time','gmt_create')
             m=('pay_amount', 'loan_amount', 'escrow_fee')
-            i = self.__StrToDate__(i,t, '-0700')
-            i=self.__SimpleMoneyToMoneyField__(i,m)
+            i = aliStrToDate(i,t, '-0700')
+            i=simpleMoneyToMoneyField(i,m)
             productlist=i.pop('product_list')
             AliOrders.objects.update_or_create(order_id=i['order_id'], defaults=i)
             self.__importProductsInOrderList__(productlist['order_product_dto'], i['order_id'])
@@ -270,8 +276,8 @@ class serviceAli():
         for i in data:
             t=('send_goods_time',)
             m=('total_product_amount', 'product_unit_price', 'logistics_amount')
-            i = self.__StrToDate__(i,t, '+0800')
-            i = self.__SimpleMoneyToMoneyField__(i,m)
+            i = aliStrToDate(i,t, '+0800')
+            i = simpleMoneyToMoneyField(i,m)
             productID=i['product_id']
             i['product']=AliProducts.objects.get(product_id=productID)
             i['main_order']=AliOrders.objects.get(order_id=main_order_id)
@@ -285,7 +291,7 @@ class serviceAli():
             j+=1
             print(j, ' ' , i)
             t=('gmt_create','gmt_modified')
-            i = self.__StrToDate__(i,t,'+0800')
+            i = aliStrToDate(i,t,'+0800')
             AliProducts.objects.update_or_create(product_id=i['product_id'], defaults=i)
 
 
@@ -298,15 +304,12 @@ class serviceAli():
             inBD={item:result[item] for item in result if item in FIELDS}
             return inBD
 
-    def __getCdekInfo__(self):
-        CITIES_FROM={'fromKazan':'420066', 'fromSaratov': '410012', 'fromChelny':'423802'}
-        res={item: Calc_tarif(from_post_code=CITIES_FROM[item],
-                              to_post_code='121000').get_tarif() for item in CITIES_FROM}
-        # fromKazan=Calc_tarif(from_post_code='420066', to_post_code=self.shipping_index).get_tarif()
-        # fromSaratov = Calc_tarif(from_post_code='410012', to_post_code=self.shipping_index)
-        # fromChelny= Calc_tarif(from_post_code='423802', to_post_code=self.shipping_index)
-        return res
-            # {'selectTarifKazan':fromKazan.get_tarif(), 'selectTarifSaratov':fromSaratov.get_tarif(), 'selectTarifChelny':fromChelny.get_tarif() }
+    # def __getCdekInfo__(self):
+    #     CITIES_FROM={'fromKazan':'420066', 'fromSaratov': '410012', 'fromChelny':'423802'}
+    #     res={item: Calc_tarif(from_post_code=CITIES_FROM[item],
+    #                           to_post_code='121000').get_tarif() for item in CITIES_FROM}
+    #
+    #     return res
 
 
 
@@ -316,7 +319,7 @@ class serviceAli():
 
 
         order = AliOrders.objects.get(order_id=id)
-        orderInfo=AliOrdersAddInformation.objects.get_or_create(order=order, defaults=self.__getAliDetailInfoOrder__(id))[0]
+        orderInfo=AliOrdersDetailInformation.objects.get_or_create(order=order, defaults=self.__getAliDetailInfoOrder__(id))[0]
         # if not AliOrdersAddInformation.objects.get(order=order):
         #     FIELDS={'buyer_info', 'gmt_modified', 'receipt_address', 'gmt_trade_end', 'buyerloginid', 'order_status'}
         #     result=self.session.aliOrderInfo(id)['aliexpress_solution_order_info_get_response']['result']['data']

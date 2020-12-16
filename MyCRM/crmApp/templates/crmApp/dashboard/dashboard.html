@@ -1,5 +1,21 @@
 {% extends 'crmApp/base.html' %}
 {% block content %}
 <h1> Панель управления </h1>
-<input type="button" class="btn btn-primary" value='Импорт заказов' onclick="document.location.href = 'pressImportOrders/'"/>
+<form method="post">
+    {% csrf_token %}
+{#    <div id="ordersDepth">#}
+{#    {{ form.checkBoxOrders.label_tag }} {{ form.checkBoxOrders }}#}
+{#    {{ form.depthDaysOrders.label_tag }} {{ form.depthDaysOrders }}#}
+{#    </div>#}
+{##}
+{#    <div id="productsDepth">#}
+{#    {{ form.checkBoxProducts.label_tag }} {{ form.checkBoxProducts }}#}
+{#    {{ form.depthDaysProducts.label_tag }} {{ form.depthDaysProducts }}#}
+{#    </div>#}
+{#    <div id="groupsUpdate">#}
+{#    {{ form.checkBoxGroups.label_tag }} {{ form.checkBoxGroups }}#}
+{#    </div>#}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Импорт из Ali</button>
+</form>
 {% endblock %}

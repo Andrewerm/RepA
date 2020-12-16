@@ -1,26 +1,36 @@
 {% extends 'crmApp/base.html' %}
 
-{% block title %}Info about {{ ali_order_info.order_id }}{% endblock %}
+{% block title %}Info about {% endblock %}
 
 {% block content %}
-    <ul>
-    <li>order_status {{ order_info.ali_order_status }}</li>
-    <li>gmt_create {{ order_info.ali_gmt_create }}</li>
-    <li>payment_type {{ order_info.ali_payment_type }}</li>
-    <li>fund_status {{ order_info.ali_fund_status}}</li>
-    <li>receipt_address {{ order_info.ali_receipt_address }}</li>
-    <li>shipping city {{ order_info.ali_receipt_address.city }}</li>
-    <li>shipping_index {{ order_info.ali_receipt_address.zip }}</li>
-    <li>Координаты: {{ order_info.ya_coord.latitude }} {{ order_info.ya_coord.longitude }}</li>
-    </ul>
-    <form action="" method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <input type="submit" class="btn btn-primary" value=" Создать СДЭК накладную"/>
-{#           onclick="document.location.href = 'createCdekOrder/'+{{ order_info.order_id}}"#}
 
-    </form>
-    {{ order_info.pochta_normalize_adress }}
+    <p>Статус заказа: {{ order_info.alidetailinfo_order_status }}</p>
+    <p>Время создания заказа: {{ order_info.alidetailinfo_gmt_create }}</p>
+    <p>Адрес в Али {{ order_info.alidetailinfo_receipt_address }}</p>
+    <p>Нормализованный адрес: {{ order_info.pochta_full_normalized_address }}</p>
+        <ul>
+            {% for i in order_info.aliordersproductlist_product_name %}
+            <li>{{i}}</li>
+            {% endfor %}
+        </ul>
+    {%  if  order_info.cdekorderresponse_cdekResponse.requests.0.state %}
+        <p>Ответ СДЭК на новую заявку: {{ order_info.cdekorderresponse_cdekResponse.requests.0.state }}</p>
+        <p>Накладная СДЭК создана: {{ order_info.cdekorderstatus_cdekStatus.requests.0.state }}</p>
+        {% if order_info.cdekorderstatus_cdekStatus.requests.0.errors %}
+            <p>Ошибки создания накладной СДЭК: {{ order_info.cdekorderstatus_cdekStatus.requests.0.errors }}</p>
+        {% endif %}
+        <p>Номер накладной СДЭК: {{ order_info.cdekorderstatus_cdekStatus.entity.cdek_number }}</p>
+        <P>ПВЗ доставки: {{ order_info.cdek_pvz.0.location.address }}</P>
+    {% else %}
+        <form action="" method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" class="btn btn-primary" value=" Создать СДЭК накладную"/>
+
+    {#           onclick="document.location.href = 'createCdekOrder/'+{{ order_info.order_id}}"#}
+
+        </form>
+    {% endif %}
 <script>
 document.getElementById('id_selectShippingFrom').addEventListener('change', function() {
       id_selectShippingFrom.querySelectorAll('li').forEach(item=>{
@@ -28,7 +38,7 @@ document.getElementById('id_selectShippingFrom').addEventListener('change', func
         document.getElementById(`id_${elem.value}`).parentElement.hidden=!elem.checked
          })
         });
-id_selectTarifKazan.parentElement.hidden='hidden';
-id_selectTarifChelny.parentElement.hidden='hidden'
+id_fromKazan.parentElement.hidden='hidden';
+id_fromChelny.parentElement.hidden='hidden'
 </script>
 {% endblock %}

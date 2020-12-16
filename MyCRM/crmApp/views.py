@@ -4,17 +4,17 @@ from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from .models import Brands, Catalog, Stores, Suppliers, AliOrdersProductList, AliProducts, AliOrders
-from .forms import BrandForm, SupplierForm, StoresForm, CatalogForm, LoginForm, UserRegForm, OrderInfoForm
-from django.contrib.auth import authenticate, login, logout, views
+from .forms import BrandForm, SupplierForm, StoresForm, CatalogForm, LoginForm, UserRegForm, OrderInfoForm, OrderInfoFormNonPVZ, DashBoardForm
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .servicesCRM import serviceAli, check_funcs, orderAliInfo
+from .servicesCRM import serviceAli, check_funcs, orderAliInfo, DEPARTURE_CITIES
 from django.core.paginator import Paginator
 from services.cdek_services import CdekAPI, CdekOrder
 
 
-# пункты отправления посылок
-SOURCE_CITIES = {'selectTarifSaratov':'SAR4', 'selectTarifKazan':'KZN37',
-                 'selectTarifChelny': 'NCHL6'}
+# # пункты отправления посылок
+# SOURCE_CITIES = {'selectTarifSaratov':'SAR4', 'selectTarifKazan':'KZN37',
+#                  'selectTarifChelny': 'NCHL6'}
 # сдэк
 Account='0372b3fff5d6707cd1633469403952df'
 Secure_password='afc14015cce5555ce582bf97b963d2d2'
@@ -192,11 +192,20 @@ class StoreEdit(UpdateView):
 
 @login_required
 def dashboard(request):
-    return render(request,'dashboard/dashboard.html')
+    if request.method=='GET':
+        form=DashBoardForm(initial={'checkBoxOrders':True, 'depthDaysOrders':1, 'checkBoxProducts': False, 'depthDaysProducts':3, 'checkBoxGroups': False})
 
-@login_required
-def dashboard2(request):
-    return render(request,'dashboard/dashboard2.html')
+    else:
+        form=DashBoardForm(request.POST)
+        if form.is_valid():
+            a = serviceAli()
+            if form.cleaned_data['checkBoxOrders']:
+                a.updateOrderList(int(form.data['depthDaysOrders']))
+            if form.cleaned_data['checkBoxProducts']:
+                a.updateProducts(int(form.data['depthDaysProducts']))
+            if form.cleaned_data['checkBoxGroups']:
+                a.updateGroupList()
+    return render(request,'dashboard/dashboard.html', context={'form':form})
 
 def userNew(request):
     if request.method=='POST':
@@ -209,12 +218,6 @@ def userNew(request):
         form=UserRegForm()
     return render(request, 'registration/newUser.html', context={'form':form})
 
-def pressButImportOrders(request):
-    a=serviceAli()
-    # a.updateGroupList()
-    #a.updateProducts(1)
-    a.updateOrderList(1)
-    return redirect('crm:dashboard')
 
 class ProductsList(ListView):
     model=AliProducts
@@ -255,55 +258,60 @@ def orderList(request):
 @check_funcs
 def OrderInfoDetail(request, id):
     def list_of_choises(): # делаем списки для выбора ПВЗ в выпадающем меню
-        for i in SOURCE_CITIES:
-            form.fields[i].choices=list(map(lambda x: (x['info']['id'], x['info']['name'] + ' - ' + x['result']['price']),
-                       orderDetailInfo.cdek_tarifes[i]))
+        for i in DEPARTURE_CITIES:
+            form.fields[i['id']].choices=list(map(lambda x: (x['info']['id'], x['info']['name'] + ' - ' + x['result']['price']),
+                       orderDetailInfo.cdektarif_tarifes[i['id']]))
         form.fields['selectPVZ'].choices = list(map(lambda x: (x['code'], x['location']['address']), orderDetailInfo.cdek_pvz))
-    ali = serviceAli()
     orderDetailInfo=orderAliInfo(id)
-    # print(orderDetailInfo)
-    # orderDetailInfo = ali.getOrder(id)
+    # print(orderDetailInfo.aliordersproductlist_product_name)
     if request.method=='GET':
-        form = OrderInfoForm(initial={'recieverFIO':orderDetailInfo.FIO, 'insurance':0})
+        if orderDetailInfo.cdek_isPVZ==1: # если есть ПВЗ, то у нас форма с ПВЗ
+            form = OrderInfoForm(initial={'recieverFIO':orderDetailInfo.alidetailinfo_receipt_address['contact_person'], 'insurance':0})
+        else: # иначе спецаильная форма без ПВЗ
+            form = OrderInfoFormNonPVZ(initial={'recieverFIO': orderDetailInfo.alidetailinfo_receipt_address['contact_person'], 'insurance': 0})
+        list_of_choises()
         return render(request, context={'order_info': orderDetailInfo, 'form': form},
                       template_name='orders/order_info.html')
-    else:
-        form=OrderInfoForm(request.POST)
+    else: # если метод POST , значит нажали кнопку получения накладной
+        _isPVZ=orderDetailInfo.cdek_isPVZ==1
+            # если есть ПВЗ, то у нас форма с ПВЗ, иначе специальная форма без ПВЗ
+        form=OrderInfoForm(request.POST) if _isPVZ else OrderInfoFormNonPVZ(request.POST)
         list_of_choises()
         if form.is_valid:
-            cdek = CdekAPI(client_id=Account, client_secret=Secure_password)
+            # создаём набор данных для накладной СДЭК
             d = dict()
             selectedShippingFrom=form.data['selectShippingFrom']
-            selectedTariffCode=form.data[selectedShippingFrom]
-            d['tariff_code'] =selectedTariffCode
+            d['tariff_code'] =form.data[selectedShippingFrom]
             d['name'] = form.data['recieverFIO']
-            d['delivery_point'] =form.data['selectPVZ']
-            d['phone'] = orderDetailInfo.phoneNumber
-            d['packages'] = orderDetailInfo.product_list(form.data['insurance'])
+            if _isPVZ:
+                d['delivery_point'] =form.data['selectPVZ']
+            d['to_location']={'address':orderDetailInfo.pochta_normalized_address.get('street','')+
+                                        ','+orderDetailInfo.pochta_normalized_address.get('house','')+
+                                        ','+orderDetailInfo.pochta_normalized_address.get('room',''),
+                                  'postal_code':orderDetailInfo.pochta_normalized_address['index']}
+            d['phone'] = orderDetailInfo.alidetailinfo_receipt_address['phone_country']+orderDetailInfo.alidetailinfo_receipt_address['mobile_no']
+            d['packages'] = orderDetailInfo.product_list_for_cdek(form.data['insurance'])
             d['number'] = orderDetailInfo.order_id
-            d['shipment_point']=SOURCE_CITIES[form.data['selectShippingFrom']]
-            newO = CdekOrder(**d)
+            i=0
+            while DEPARTURE_CITIES[i]['id']!=selectedShippingFrom: # подбираем ПВЗ по выбранному городу отправки
+                i+=1
+            d['shipment_point'] = DEPARTURE_CITIES[i]['PVZ']
+            newO = CdekOrder(**d) # добавление постоянных данных
+            cdek = CdekAPI(client_id=Account, client_secret=Secure_password)
             result = cdek.new_order(newO)
+            orderDetailInfo.cdek_response_save(result)
             print(result)
             return render(request, context={'order_info': orderDetailInfo, 'form': form},
                       template_name='orders/order_info.html')
 
 
+def handle_load_avangard(request):
+    if request.method=="POST":
+        file=request.FILES['file']
+        print(f'Загружен файл {file}')
+        from csv_json import csvjson as cj
+        cj.read_csv(file)
+        pass
 
-# def createCdekOrder(request,id):
-#     a=CdekAPI(client_id=Account, client_secret=Secure_password)
-#     b=serviceAli()
-#     orderInfo=b.getOrder(id)
-#     d=dict()
-#     d['tariff_code']=orderInfo.cdek_tarifes['fromSaratov'][0]['info']['id']
-#     d['name']=orderInfo.FIO
-#     d['delivery_point']=orderInfo.cdek_pvz[0]['code']
-#     d['phone']=orderInfo.phoneNumber
-#     d['packages']=orderInfo.product_list
-#     d['number']=orderInfo.order_id
-#
-#     newO=CdekOrder(**d)
-#     result=a.new_order(newO)
-#     print(result)
-#
-#     return redirect('crm:order_info', id)
+
+    return redirect("crm:load_avangard")

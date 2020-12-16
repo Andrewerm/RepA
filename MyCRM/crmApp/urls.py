@@ -1,5 +1,6 @@
 from django.urls import path, include
 from . import views
+from django.views.generic import TemplateView
 from .models import Brands
 
 app_name='crm'
@@ -30,12 +31,15 @@ urlpatterns=[
     path('suppliers/edit/<slug:slug>', views.supplierEdit, name='supplier_edit'),
     path('suppliers/', views.supplier_list, name='suppliers_list'),
     path('dashboard/', views.dashboard, name='dashboard'),
-    path('dashboard2/', views.dashboard2, name='dashboard2'),
-    path('dashboard/pressImportOrders/', views.pressButImportOrders, name='pressImportOrder'),
+    # path('dashboard2/', views.dashboard2, name='dashboard2'),
+    # path('dashboard/pressImportOrders/', views.pressButImportOrders, name='pressImportOrder'),
     path('product_list/', views.ProductsList.as_view(), name='products_list'),
     path('product_info_view/<int:id>', views.productInfoDetail, name='product_info'),
     path('orders_list/', views.orderList, name='orders_list'),
     # path('order_info/createCdekOrder/<int:id>', views.createCdekOrder, name='create_cdek_order'),
     path('order_info/<int:id>', views.OrderInfoDetail, name='order_info'),
+    # path('order_info/<int:id>', views.OrderInfoDetail.as_view(), name='order_info'),
+    path('load_avangard/', TemplateView.as_view(template_name='products-list/load-avangard.html'), name='load_avangard'),
+    path('handle_load_avangard/', views.handle_load_avangard,  name="handle_load_avangard"),
 
 ]

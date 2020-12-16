@@ -1,0 +1,16 @@
+{% extends 'crmApp/base.html' %}
+
+{% block title %}List of products{% endblock %}
+
+{% block content %}
+    <div>
+    <form method="post" enctype="multipart/form-data" action="{% url "crm:handle_load_avangard" %}">
+        {% csrf_token %}
+        <div class="form-group">
+        <input type="file" name="file" accept=".csv">
+        </div>
+        <input type="submit" class="btn btn-primary" value="Загрузить CSV Авангарда">
+    </form>
+    </div>
+
+{% endblock %}
