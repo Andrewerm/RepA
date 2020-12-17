@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>#cont {border: 3px dashed green; height: 120px; width: 97%; background: lime; position: absolute; top: 90px}</style>
+</head>
+<body>
+
+<script>
+    localStorage['saved']=' что то храним '
+
+    if (localStorage['saved']) {
+        console.log(localStorage.getItem('saved'))
+    }
+    else
+    {
+        console.log(' такого ключа нет')
+    }
+    localStorage.getItem('')
+</script>
+
+</body>
+</html>

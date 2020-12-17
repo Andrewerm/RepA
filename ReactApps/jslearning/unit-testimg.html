@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mocha Tests</title>
+    <link href="https://cdn.rawgit.com/mochajs/mocha/2.2.5/mocha.css" rel="stylesheet"/>
+</head>
+<body>
+<div id="mocha"></div>
+
+<script src="https://cdn.rawgit.com/mochajs/mocha/2.2.5/mocha.js"></script>
+<script src="email-validator.js">
+    mocha.setup('bdd');
+    const sum=(left,right)=>  left*right;
+    describe(' 3rd Grade Math', ()=> {
+        it(' should sum two and two correctly', () => {
+            if (sum(2, 2) !== 4) {
+                throw new Error(` 2 +  2 should be equal 4, but was ${sum}`);
+            }
+        });
+        it (' it should run ', ()=> {
+
+        })
+    })
+    mocha.run()
+
+</script>
+</body>
+</html>
