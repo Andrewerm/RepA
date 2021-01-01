@@ -60,3 +60,8 @@ class DashBoardForm(forms.Form):
     depthDaysProducts=forms.IntegerField(label='Глубина импорта товаров (дней)',
                                          widget=forms.NumberInput(attrs={'disabled':'disabled'}), required=False)
     checkBoxGroups=forms.BooleanField(label='Импортировать группы', required=False)
+
+
+# форма для загрузки файлов
+class UploadFileForm(forms.Form):
+    file = forms.FileField()

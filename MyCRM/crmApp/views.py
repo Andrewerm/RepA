@@ -4,12 +4,15 @@ from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from .models import Brands, Catalog, Stores, Suppliers, AliOrdersProductList, AliProducts, AliOrders
-from .forms import BrandForm, SupplierForm, StoresForm, CatalogForm, LoginForm, UserRegForm, OrderInfoForm, OrderInfoFormNonPVZ, DashBoardForm
+from .forms import BrandForm, SupplierForm,\
+    StoresForm, CatalogForm, LoginForm, UserRegForm, OrderInfoForm, OrderInfoFormNonPVZ, DashBoardForm, UploadFileForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from .servicesCRM import serviceAli, check_funcs, orderAliInfo, DEPARTURE_CITIES
 from django.core.paginator import Paginator
 from services.cdek_services import CdekAPI, CdekOrder
+from services.utils import handle_avangard_file
+from services.google_services import importTradeChas
 
 
 # # пункты отправления посылок
@@ -305,13 +308,13 @@ def OrderInfoDetail(request, id):
                       template_name='orders/order_info.html')
 
 
-def handle_load_avangard(request):
+def import_avangard(request):
     if request.method=="POST":
-        file=request.FILES['file']
-        print(f'Загружен файл {file}')
-        from csv_json import csvjson as cj
-        cj.read_csv(file)
-        pass
-
-
-    return redirect("crm:load_avangard")
+        form=UploadFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            handle_avangard_file(request.FILES['file'])
+            print(f'Загружен файл {request.FILES["file"]}')
+    else:
+        form=UploadFileForm()
+    importTradeChas()
+    return render(request, context={'form':form}, template_name='products-list\load-avangard.html')

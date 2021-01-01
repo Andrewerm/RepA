@@ -24,6 +24,7 @@ tokenPochta='IomDCsxKO_jjc3yx7eocmSZ3FYDIMMGn'
 loginPochta='andrewerm@yandex.ru'
 secretPochta='531930Ab-'
 
+CountItemsInIteration=10 # кол-во элементов в каждом запрос к Али
 NOPVZ=[{'code':'000', 'location':{'address': 'Нет ПВЗ' }}]
 DEPARTURE_CITIES=[{'id':'fromSaratov','name': 'Саратов','PVZ':'SAR4', 'index':'410012'},
                   {'id':'fromKazan','name': 'Казань','PVZ':'KZN37', 'index':'420066'},
@@ -99,7 +100,7 @@ class AliDataIterations(ABC):
             self.current_page += 1
             if self.current_page > self.total_page:
                 raise StopIteration
-            self.__load_data__(self.current_page, 10)
+            self.__load_data__(self.current_page, CountItemsInIteration)
             self.current_item = -1
 
 

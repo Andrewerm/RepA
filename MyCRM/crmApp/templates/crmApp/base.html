@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-{#    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">#}
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
     {% load staticfiles %}
-    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+{#    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">#}
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
-    <script src="{% static 'js/bootstrap.min.js'%}"></script>
+{#    <script src="{% static 'js/bootstrap.min.js'%}"></script>#}
     <title>{% block title %}Ali express my CRM{% endblock %}</title>
 </head>
 <body>
@@ -30,7 +30,7 @@
                 <li class="active"><a href="{% url "crm:dashboard" %}">My dashboard</a> </li>
                 <li><a href="{% url "crm:products_list" %}">Products</a> </li>
                 <li><a href={% url "crm:orders_list" %}>Orders</a></li>
-                <li><a href={% url "crm:load_avangard" %}>Loading from avangard</a></li>
+                <li><a href={% url "crm:import_avangard" %}>Loading from avangard</a></li>
             </ul>
 {#        </div>#}
     </div>

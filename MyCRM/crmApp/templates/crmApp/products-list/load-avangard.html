@@ -4,11 +4,9 @@
 
 {% block content %}
     <div>
-    <form method="post" enctype="multipart/form-data" action="{% url "crm:handle_load_avangard" %}">
+    <form method="post" enctype="multipart/form-data" action="">
         {% csrf_token %}
-        <div class="form-group">
-        <input type="file" name="file" accept=".csv">
-        </div>
+        {{ form }}
         <input type="submit" class="btn btn-primary" value="Загрузить CSV Авангарда">
     </form>
     </div>

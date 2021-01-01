@@ -88,8 +88,8 @@ class AliProducts(models.Model):
     currency_code=models.CharField(verbose_name='currency code', max_length=3)
     coupon_start_date=models.DateTimeField(verbose_name='Coupon start date, GMT+8', null=True)
     coupon_end_date = models.DateTimeField(verbose_name='Coupon end date, GMT+8', null=True)
-    def __str__(self):
-        return self.subject
+    # def __str__(self):
+    #     return self.subject
 
 
 class AliOrders(models.Model):
@@ -202,3 +202,10 @@ class AliChildGroupList(models.Model):
     group_name = models.CharField(verbose_name='group name', max_length=20)
     group_id = models.PositiveIntegerField(verbose_name='group id', primary_key=True)
     ali_group=models.ForeignKey(AliGroupList, on_delete=models.CASCADE)
+
+class AvangardStock(models.Model):
+    item=models.CharField( max_length=50)
+
+class TradeChasStock(models.Model):
+        item = models.CharField(max_length=50)
+        count=models.SmallIntegerField()

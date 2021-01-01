@@ -39,7 +39,6 @@ urlpatterns=[
     # path('order_info/createCdekOrder/<int:id>', views.createCdekOrder, name='create_cdek_order'),
     path('order_info/<int:id>', views.OrderInfoDetail, name='order_info'),
     # path('order_info/<int:id>', views.OrderInfoDetail.as_view(), name='order_info'),
-    path('load_avangard/', TemplateView.as_view(template_name='products-list/load-avangard.html'), name='load_avangard'),
-    path('handle_load_avangard/', views.handle_load_avangard,  name="handle_load_avangard"),
+    path('load_avangard/', views.import_avangard,  name="import_avangard"),
 
 ]
