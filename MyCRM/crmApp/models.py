@@ -204,8 +204,12 @@ class AliChildGroupList(models.Model):
     ali_group=models.ForeignKey(AliGroupList, on_delete=models.CASCADE)
 
 class AvangardStock(models.Model):
-    item=models.CharField( max_length=50)
+    item=models.CharField(max_length=50)
 
 class TradeChasStock(models.Model):
-        item = models.CharField(max_length=50)
-        count=models.SmallIntegerField()
+    item = models.CharField(max_length=50)
+    count=models.SmallIntegerField()
+
+class MyStock(models.Model):
+    item = models.CharField(max_length=50)
+    count=models.SmallIntegerField()

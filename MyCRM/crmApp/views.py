@@ -12,8 +12,7 @@ from .servicesCRM import serviceAli, check_funcs, orderAliInfo, DEPARTURE_CITIES
 from django.core.paginator import Paginator
 from services.cdek_services import CdekAPI, CdekOrder
 from services.utils import handle_avangard_file
-from services.google_services import importTradeChas
-
+from services.google_services import importTradeChas, importMyStock
 
 # # пункты отправления посылок
 # SOURCE_CITIES = {'selectTarifSaratov':'SAR4', 'selectTarifKazan':'KZN37',
@@ -316,5 +315,6 @@ def import_avangard(request):
             print(f'Загружен файл {request.FILES["file"]}')
     else:
         form=UploadFileForm()
-    importTradeChas()
+    importTradeChas.handled_data()
+    importMyStock.handled_data()
     return render(request, context={'form':form}, template_name='products-list\load-avangard.html')
