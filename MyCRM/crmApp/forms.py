@@ -17,12 +17,12 @@ class SupplierForm(forms.Form):
 class StoresForm(forms.ModelForm):
     class Meta:
         model=Stores
-        fields=['catalog_item', 'quantity', 'wholesale_price', 'supplier', 'slug']
+        fields=['catalog_item', 'quantity', 'wholesale_price', 'supplier']
 
 class CatalogForm(forms.ModelForm):
     class Meta:
         model=Catalog
-        fields=['article', 'brand_name', 'model_name', 'model_series', 'slug']
+        fields=['article', 'brand_name', 'model_name', 'model_series']
 
 class LoginForm(forms.Form):
     username=forms.CharField(max_length=11, widget=forms.TextInput(attrs={'autofocus':True}))

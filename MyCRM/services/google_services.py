@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-from crmApp.models import TradeChasStock, MyStock
+
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
@@ -59,24 +59,35 @@ class Import_from_google_sheets(ABC):
 
 class importTradeChas(Import_from_google_sheets):
     SAMPLE_SPREADSHEET_ID = '16Nkq7PLHNfif6mZEZDOoNkB68jjyOR-3Ca_rlM7OxAI'
-    SAMPLE_RANGE_NAME = 'трейдчас!C1:D1000'
+    SAMPLE_RANGE_NAME = 'трейдчасЭкспорт!E2:F1000'
 
     @classmethod
     def handled_data(cls):
-        TradeChasStock.objects.all().delete()
+        # TradeChasStock.objects.all().delete()
         values=cls.__get_data__()
-        values=filter(lambda x:x[0]!='', values) # удаляем строки с пробелами
-        values = map(lambda x: TradeChasStock(item=x[0], count=x[1]), values)
-        TradeChasStock.objects.bulk_create(values)
+        values=list(filter(lambda x:(x[0]!='' and x[1]!='0'), values)) # удаляем строки с пробелами
+        return values
+        # values = map(lambda x: TradeChasStock(item=x[0], count=x[1]), values)
+        # TradeChasStock.objects.bulk_create(values)
 
 
-class importMyStock(Import_from_google_sheets):
+
+class importMyStockVostok(Import_from_google_sheets):
     SAMPLE_SPREADSHEET_ID = '16Nkq7PLHNfif6mZEZDOoNkB68jjyOR-3Ca_rlM7OxAI'
-    SAMPLE_RANGE_NAME = 'Мои!C2:D1000'
+    SAMPLE_RANGE_NAME = 'МоиВосток!H2:L1000'
 
     @classmethod
     def handled_data(cls):
-        MyStock.objects.all().delete()
-        values=cls.__get_data__()
-        values = map(lambda x: MyStock(item=x[0], count=x[1]), values)
-        MyStock.objects.bulk_create(values)
+            values = cls.__get_data__()
+            values = list(filter(lambda x: (x[0] != '') and int(x[2])>0, values))  # удаляем строки с пробелами
+            return values
+
+class importMyStockMoskvin(Import_from_google_sheets):
+    SAMPLE_SPREADSHEET_ID = '16Nkq7PLHNfif6mZEZDOoNkB68jjyOR-3Ca_rlM7OxAI'
+    SAMPLE_RANGE_NAME = 'МоиМосквин!B2:E30'
+
+    @classmethod
+    def handled_data(cls):
+            values = cls.__get_data__()
+            values = list(filter(lambda x: x[0] != '', values))  # удаляем строки с пробелами
+            return values

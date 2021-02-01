@@ -1,6 +1,7 @@
 from djmoney.models.fields import MoneyField
 from django.db import models
 from django.urls import reverse
+from django.db.models import Sum
 
 
 
@@ -33,11 +34,16 @@ class Catalog(models.Model):
                                  related_name='catalog_items') # связь с сущностью Бренды
     model_name=models.CharField(max_length=20, help_text='модель') # Наименование модели
     model_series=models.ManyToManyField(Series, blank=True) # связь с сущностью Серии
-    slug=models.SlugField(unique=True)
     def __str__(self):
-         return self.brand_name.name+' '+self.model_name
+        return self.brand_name.name+' '+self.model_name
     def get_absolute_url(self):
-        return reverse('crm:model_details', args=[self.slug])
+        return reverse('crm:model_details', args=[self.article])
+    def stock(self): # общее кол-во в остатке
+        return self.item_of_store.aggregate(Sum('quantity'))['quantity__sum']
+    def stock_suppl(self): # остатки в разрезе поставщиков
+        a=self.item_of_store.all()
+        return {i.supplier.name:i.quantity for i in a if i.quantity>0}
+
     class Meta:
         verbose_name='Модель'
         verbose_name_plural='Каталог моделей'
@@ -57,15 +63,13 @@ class Suppliers(models.Model):
 
 # Сущность информация по остаткам и ценам на складах у поставщиков
 class Stores(models.Model):
-    catalog_item=models.ForeignKey(Catalog, related_name='item_of_store', on_delete=models.DO_NOTHING, verbose_name='Модель')
+    catalog_item=models.ForeignKey(Catalog, related_name='item_of_store', on_delete=models.CASCADE, verbose_name='Модель')
     quantity=models.IntegerField(blank=True, verbose_name='количество')
     wholesale_price=MoneyField(max_digits=14, decimal_places=2, default_currency='RUB', blank=True, verbose_name='оптовая цена')
-    supplier=models.ForeignKey(Suppliers,on_delete=models.DO_NOTHING, related_name='items_of_supplier', verbose_name='поставщик')
-    slug=models.SlugField(unique=True)
+    supplier=models.ForeignKey(Suppliers,on_delete=models.CASCADE, related_name='items_of_supplier', verbose_name='поставщик')
+    innerID=models.CharField(verbose_name="inner suppliers product id", max_length=20, blank=True, default='')
     def __str__(self):
          return self.supplier.name
-    def get_absolute_url(self):
-        return reverse('crm:store_item', args=[self.slug])
     class  Meta:
         verbose_name='Складской запас'
         verbose_name_plural='Складские запасы'
@@ -153,7 +157,7 @@ class AliOrdersDetailedInformation(models.Model):
 
 class tokensApi(models.Model):
     nameApi=models.CharField(max_length=10, verbose_name='API имя', primary_key=True)
-    token=models.CharField(max_length=250, verbose_name='Токен', default='', blank=True)
+    token=models.BinaryField(verbose_name='Токен', blank=True)
     data_expires=models.DateTimeField(verbose_name='Дата действия токена', null=True)
 
 class AliOrdersProductList(models.Model):
@@ -203,13 +207,13 @@ class AliChildGroupList(models.Model):
     group_id = models.PositiveIntegerField(verbose_name='group id', primary_key=True)
     ali_group=models.ForeignKey(AliGroupList, on_delete=models.CASCADE)
 
-class AvangardStock(models.Model):
-    item=models.CharField(max_length=50)
 
-class TradeChasStock(models.Model):
-    item = models.CharField(max_length=50)
-    count=models.SmallIntegerField()
-
-class MyStock(models.Model):
-    item = models.CharField(max_length=50)
-    count=models.SmallIntegerField()
+class ProductsSKU(models.Model):
+    SPU=models.ForeignKey(AliProducts, on_delete=models.CASCADE,
+                          verbose_name='product id', related_name='product')
+    SKU=models.CharField(verbose_name='SKU',max_length=15)
+    brand=models.CharField(verbose_name='brand in ALi',max_length=15, blank=True, default='')
+    model=models.CharField(verbose_name='model in ALi',max_length=15, blank=True, default='')
+    subject=models.CharField(verbose_name='subject in Russian',max_length=50, blank=True, default='')
+    class Meta:
+        unique_together = (('SPU', 'SKU'),)

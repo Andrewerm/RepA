@@ -1,5 +1,5 @@
 from django.urls import reverse_lazy
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
@@ -11,8 +11,9 @@ from django.contrib.auth.decorators import login_required
 from .servicesCRM import serviceAli, check_funcs, orderAliInfo, DEPARTURE_CITIES
 from django.core.paginator import Paginator
 from services.cdek_services import CdekAPI, CdekOrder
-from services.utils import handle_avangard_file
-from services.google_services import importTradeChas, importMyStock
+from services.utils import handle_avangard_file, handle_myownstore, handle_tradechas, handle_syncInventory
+from services.avangard import AvangardApi
+
 
 # # пункты отправления посылок
 # SOURCE_CITIES = {'selectTarifSaratov':'SAR4', 'selectTarifKazan':'KZN37',
@@ -229,15 +230,18 @@ class ProductsList(ListView):
 
 def productInfoDetail(request, id):
     try:
-        product_detail = AliProducts.objects.get(product_id=id)
+        product_detail = AliProducts.objects.get(product_id=id) # краткая информация из пакетной функции из БД
         a=serviceAli()
-        productDetailInfo=a.getProduct(id)
+        productDetailInfo=a.getProduct(id) # детальная информация из одиночной функции из API
+        skulist=productDetailInfo['aeop_ae_product_s_k_us']['global_aeop_ae_product_sku']
+        return render(request, context={'product_info': product_detail, 'product_detail_info': productDetailInfo, 'skulist':skulist},
+                      template_name='products-list/product_info.html')
 
     except Exception as err:
         print(f' ошибка: {err}')
         return redirect('crm:products_list')
 
-    return render(request, context={'product_info':product_detail, 'product_detail_info':productDetailInfo}, template_name='products-list/product_info.html')
+
 
 
 # class OrdersList(ListView):
@@ -313,8 +317,23 @@ def import_avangard(request):
         if form.is_valid():
             handle_avangard_file(request.FILES['file'])
             print(f'Загружен файл {request.FILES["file"]}')
+            # s = AvangardApi()
+            # s.updating_stocks()
     else:
         form=UploadFileForm()
-    importTradeChas.handled_data()
-    importMyStock.handled_data()
+    # importTradeChas.handled_data()
+    # importMyStock.handled_data()
+    # syncVostokInventory()
     return render(request, context={'form':form}, template_name='products-list\load-avangard.html')
+
+def importMyOwn(request):
+    handle_myownstore()
+    return HttpResponse('готово')
+
+def importTradechas(request):
+    handle_tradechas()
+    return HttpResponse('готово')
+
+def syncInventory(request):
+    handle_syncInventory()
+    return HttpResponse('готово')

@@ -1,6 +1,8 @@
 from services.common import providerAPI
 import hmac , pytz
 from datetime import datetime
+import copy
+AttemptCount=5 # кол-во попыток соединения с API Ali
 
 class AliApi(providerAPI):
     BASE_URL ='https://eco.taobao.com/router/rest'
@@ -18,7 +20,7 @@ class AliApi(providerAPI):
         return str(signature).upper()
 
     def __aop_timestamp(self):
-        # временная метка по китайское вроеменной зоне
+        # временная метка по китайское временной зоне
         tz = pytz.timezone('Asia/Shanghai')
         timestamp = datetime.now(tz=tz).strftime('%Y-%m-%d %H:%M:%S')
         return timestamp
@@ -38,13 +40,20 @@ class AliApi(providerAPI):
                    'session':self.auth_params['sessionkey']}
         if kwargs:
             payload[kwargs['key']]=kwargs['value']
+            if kwargs.get('changes'):
+                payload['item_list']=kwargs['changes']
         sign=self.__aop_signature(self.auth_params['secret'], payload)
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
         payload['sign']=sign
-        print(sign, '  ', payload['timestamp'])
-        return self.resp("POST", url, headers=headers, data=payload)
+        i=copy.copy(AttemptCount)
+        result='Ошибка сервера!' # заглушка
+        while i>0 and (type(result)!=dict or result.get('error_response')): # проверяем ответ на безошибочность и кол-во итераций
+            print(f'Conecting to API ...  {AttemptCount-i+1}')
+            result=self.resp("POST", url, headers=headers, data=payload)
+            i-=1
+        return result
 
     def aliProductList(self, current_page,page_size, fromDateTime, status='*'):
         self.METHOD='aliexpress.solution.product.list.get'
@@ -73,3 +82,10 @@ class AliApi(providerAPI):
     def aliGetGroupList(self):
         self.METHOD='aliexpress.product.productgroups.get'
         return self.__reqApi()
+
+    # метод асинхронного обновления данных
+    def aliSolutionFeed(self, operationtype, changes):
+        self.METHOD = 'aliexpress.solution.feed.submit'
+        key = 'operation_type'
+        value = operationtype
+        return self.__reqApi(key=key, value=value, changes=changes)

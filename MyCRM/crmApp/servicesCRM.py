@@ -4,7 +4,7 @@ from services.pochta_services import PochtaApi
 from services.yandex_services import Geocoder
 from abc import ABC, abstractmethod
 from .models import AliProducts, AliOrders, AliOrdersProductList,\
-    AliGroupList, AliChildGroupList, AliOrdersDetailedInformation
+    AliGroupList, AliChildGroupList, AliOrdersDetailedInformation, ProductsSKU
 from django.db.models.query import QuerySet
 from datetime import datetime, timedelta
 from djmoney.money import Money
@@ -24,7 +24,9 @@ tokenPochta='IomDCsxKO_jjc3yx7eocmSZ3FYDIMMGn'
 loginPochta='andrewerm@yandex.ru'
 secretPochta='531930Ab-'
 
-CountItemsInIteration=10 # кол-во элементов в каждом запрос к Али
+CountItemsInIteration=100 # кол-во элементов в каждом запрос к Али
+SizeSlice=30 # размер среза (кол-во записей в партии) при пакетной загрузке данных
+
 NOPVZ=[{'code':'000', 'location':{'address': 'Нет ПВЗ' }}]
 DEPARTURE_CITIES=[{'id':'fromSaratov','name': 'Саратов','PVZ':'SAR4', 'index':'410012'},
                   {'id':'fromKazan','name': 'Казань','PVZ':'KZN37', 'index':'420066'},
@@ -88,7 +90,7 @@ class AliDataIterations(ABC):
         self.current_page = 1
         self.current_item=-1
         self.depthUpdatingDays=depthUpdatingDays
-        self.__load_data__(1, 10)
+        self.__load_data__(1, CountItemsInIteration)
 
     def __next__(self):
         if not self.total_count:
@@ -255,8 +257,6 @@ class serviceAli():
     def __init__(self):
         self.session = AliApi(app_key=appAliKey, secret=Alisecret, sessionkey=AlisSessionKey)
 
-
-
     @check_funcs
     def updateOrderList(self, depthUpdatingDays):
         a=iterOrderList(self.session.aliOrderList, depthUpdatingDays=depthUpdatingDays)
@@ -284,50 +284,55 @@ class serviceAli():
             i['main_order']=AliOrders.objects.get(order_id=main_order_id)
             AliOrdersProductList.objects.update_or_create(order_id=i['order_id'], defaults=i)
 
-    def updateProducts(self, depthUpdatingDays):
+    def updateProducts(self, depthUpdatingDays): # импорт товаров из Али
         a=iterProductList(self.session.aliProductList, depthUpdatingDays=depthUpdatingDays)
-        print(len(a))
         j=0
         for i in a:
             j+=1
             print(j, ' ' , i)
-            t=('gmt_create','gmt_modified')
-            i = aliStrToDate(i,t,'+0800')
-            AliProducts.objects.update_or_create(product_id=i['product_id'], defaults=i)
+            i = aliStrToDate(i,('gmt_create','gmt_modified'),'+0800')
+            item=AliProducts.objects.update_or_create(product_id=i['product_id'], defaults=i)[0]
+            # добавляем SKU
+            productInfo = self.getProduct(i['product_id'])  # получаем инфу из API Али
+            try:
+                # получаем список SKU по продукту
+                skulist = productInfo['aeop_ae_product_s_k_us']['global_aeop_ae_product_sku']
+                # получаем все аттрибуты карточки модели
+                attrs=productInfo['aeop_ae_product_propertys']['global_aeop_ae_product_property']
+                # ищем в аттрибутах бренд и модель и русское наименование
+                brand=next(x for x in attrs if x['attr_name_id']==2)['attr_value']
+                model=next(x for x in attrs if x['attr_name_id']==3)['attr_value']
+                subjectlist=productInfo['multi_language_subject_list']['global_subject']
+                subject=next(x for x in subjectlist if x['locale']=='ru_RU')['subject']
+                for sku in skulist:
+                        scucode = sku.get('sku_code', i['product_id'])
+                        ProductsSKU.objects.update_or_create(SKU=scucode, SPU=item, defaults={'brand':brand,
+                                                             'model': model, 'subject':subject})
+                        print(f'... добавили SKU {scucode} модели {brand} {model}')
+                if len(skulist)==0:
+                     raise StopIteration
+            except KeyError as err:
+                print(f'ошибка {err}')
+            except StopIteration as err:
+                print(f'не нашёлся аттрибут в {i["product_id"]},  ошибка {err}')
+
 
 
     def getProduct(self, id):
-        return self.session.aliProductInfo(id)['aliexpress_solution_product_info_get_response']['result']
+        res=self.session.aliProductInfo(id)
+        try:
+            res2=res['aliexpress_solution_product_info_get_response']['result']
+            return res2
+        except KeyError as keyerr:
+            print(f'ошибка парсинга ответа Ali {keyerr}')
+
+
 
     def __getAliDetailInfoOrder__(self,id):
             FIELDS={'buyer_info', 'gmt_modified', 'receipt_address', 'gmt_trade_end', 'buyerloginid', 'order_status'}
             result=self.session.aliOrderInfo(id)['aliexpress_solution_order_info_get_response']['result']['data']
             inBD={item:result[item] for item in result if item in FIELDS}
             return inBD
-
-    # def __getCdekInfo__(self):
-    #     CITIES_FROM={'fromKazan':'420066', 'fromSaratov': '410012', 'fromChelny':'423802'}
-    #     res={item: Calc_tarif(from_post_code=CITIES_FROM[item],
-    #                           to_post_code='121000').get_tarif() for item in CITIES_FROM}
-    #
-    #     return res
-
-
-
-    @check_funcs
-    def getOrder(self, id):
-
-
-
-        order = AliOrders.objects.get(order_id=id)
-        orderInfo=AliOrdersDetailInformation.objects.get_or_create(order=order, defaults=self.__getAliDetailInfoOrder__(id))[0]
-        # if not AliOrdersAddInformation.objects.get(order=order):
-        #     FIELDS={'buyer_info', 'gmt_modified', 'receipt_address', 'gmt_trade_end', 'buyerloginid', 'order_status'}
-        #     result=self.session.aliOrderInfo(id)['aliexpress_solution_order_info_get_response']['result']['data']
-        #     inBD={item:result[item] for item in result if item in FIELDS }
-        #     AliOrdersAddInformation.objects.update_or_create(order=order, defaults=inBD)
-        # orderInfo=AliOrdersAddInformation.objects.get(order=order)
-        return orderInfo
 
     def __updateChildGroupList__(self, data, group_id):
         for i in data:
@@ -345,6 +350,19 @@ class serviceAli():
                 self.__updateChildGroupList__(child_group_list['aeop_ae_product_child_group'], i['group_id'])
             else:
                 AliGroupList.objects.update_or_create(group_id=i['group_id'], defaults=i)
+
+    def updateStockAmountSync(self,id,amount):
+        # req=[{"item_content_id": "A00000000Y1",
+        #       "item_content": {
+        #           "aliexpress_product_id": id,
+        #      ]
+
+
+        a=self.session.aliSolutionFeed('PRODUCT_STOCKS_UPDATE', 'test')
+
+    def updateStockAmountAsync(self,batch):
+        result = self.session.aliSolutionFeed('PRODUCT_STOCKS_UPDATE', batch)
+        print(result)
 
 
 

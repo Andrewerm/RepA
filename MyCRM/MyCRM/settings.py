@@ -41,7 +41,6 @@ INSTALLED_APPS = [
     'crmApp',
     'djmoney',
 ]
-CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

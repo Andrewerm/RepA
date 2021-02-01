@@ -24,9 +24,11 @@ class BrandsAdmin(admin.ModelAdmin):
 
 @admin.register(Catalog)
 class CatalogAdmin(admin.ModelAdmin):
-    list_display = ('article', 'brand_name', 'model_name')
-    list_filter = ('article', 'brand_name', 'model_name')
+    list_display = ('article', 'brand_name', 'model_name', 'stock', 'stock_suppl')
+    list_filter = ('brand_name',)
+    ordering = ('-model_name',)
 
 @admin.register(Stores)
 class StoresAdmin(admin.ModelAdmin):
     list_display = ('catalog_item','quantity', 'supplier')
+    list_filter = ('supplier',)

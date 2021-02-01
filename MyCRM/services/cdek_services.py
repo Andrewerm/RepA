@@ -1,7 +1,6 @@
 from services.common import providerAPI
 import json
-from datetime import datetime, timedelta, timezone
-from crmApp.models import tokensApi
+import requests
 
 class CdekOrder():
     def __init__(self, **params):
@@ -25,26 +24,6 @@ class CdekAPI(providerAPI):
     REQURL='/deliverypoints'
     REQORDER='/orders'
 
-    # def __init__(self, **kwargs):
-    #     self.auth_params=kwargs
-    #     self.get_token_from_base()
-
-    # def get_token_from_base(self):
-    #     data, created=tokensApi.objects.get_or_create(nameApi='cdek')
-    #     if created or not data.token or data.data_expires<datetime.now(timezone.utc):
-    #         # если в БД ещё нет записи cdek или есть, но токена нет, или он просрочен
-    #         self.get_token()
-    #         data.token=self.session_params['access_token']
-    #         delta = timedelta(seconds=int(self.session_params['expires_in']))
-    #         data.data_expires=datetime.now(timezone.utc)+delta
-    #         data.save()
-    #         print('Получаем новый сессионный ключ от СДЭК')
-    #     else:
-    #         # если токен в БД есть и не просрочен
-    #         self.session_params['access_token']=data.token
-    #         print('Используем старый сессионный ключ от СДЭК')
-
-
     def GET_PVZ(self, **params):
 
         url = self.BASE_URL + self.REQURL
@@ -62,7 +41,7 @@ class CdekAPI(providerAPI):
 
     def new_order(self, newOrderData):
         data=newOrderData.retJson()
-        self.get_token()
+        # self.get_token() непонятно зачем
         url = self.BASE_URL + self.REQORDER
         headers= self.bearer
         headers['Content-Type']='application/json'
@@ -72,7 +51,7 @@ class CdekAPI(providerAPI):
 class  Calc_tarif(providerAPI):
     BASE_URL = 'https://kit.cdek-calc.ru/api'
     def __init__(self):
-        pass
+        self.session = requests.Session()
 
 
     def get_tarif(self,  **kwargs):
