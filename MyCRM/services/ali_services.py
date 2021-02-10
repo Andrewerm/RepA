@@ -89,3 +89,9 @@ class AliApi(providerAPI):
         key = 'operation_type'
         value = operationtype
         return self.__reqApi(key=key, value=value, changes=changes)
+
+    def aliSolutionResponse(self, jobid):
+         self.METHOD = 'aliexpress.solution.feed.query'
+         key = 'job_id'
+         value = jobid
+         return self.__reqApi(key=key, value=value)

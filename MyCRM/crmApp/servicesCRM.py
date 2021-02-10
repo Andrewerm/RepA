@@ -249,6 +249,9 @@ class orderAliInfo():
         cost=int(int(insurance)/products.count())
         res=[{'name': 'Часы Восток', 'ware_key': re.search('\d{6}', item.product_name)[0],
               'payment': {'value': 0},'cost': cost, 'weight': weight, 'amount': 1} for item in products]
+        # res=[{'name': 'Часы Восток', 'ware_key': '123456',
+        #       'payment': {'value': 0},'cost': cost, 'weight': weight, 'amount': 1} for item in products]
+
         return [{'number': '001', 'weight': 100, 'items': res }]
 
 
@@ -360,9 +363,16 @@ class serviceAli():
 
         a=self.session.aliSolutionFeed('PRODUCT_STOCKS_UPDATE', 'test')
 
+
     def updateStockAmountAsync(self,batch):
         result = self.session.aliSolutionFeed('PRODUCT_STOCKS_UPDATE', batch)
         print(result)
+        return result
+
+    def updateStockAmountAsyncResults(self, jobid):
+        result = self.session.aliSolutionResponse(jobid)
+        print(result)
+        return result
 
 
 

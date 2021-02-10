@@ -43,4 +43,5 @@ urlpatterns=[
     path('importmyown/', views.importMyOwn, name="import_myown"),
     path('importtraid/', views.importTradechas, name="import_trade"),
     path('syncinventory/', views.syncInventory, name="syncinventory"),
+    path('syncinventoryresponce/<int:jobid>', views.getInventorySyncResults, name="getInventorySyncResults"),
 ]

@@ -29,10 +29,10 @@ class Series(models.Model):
 
 # Сущность Каталог моделей какие вообще бывают в природе
 class Catalog(models.Model):
-    article=models.CharField(max_length=7, unique=True, help_text='артикул товара') # артикул, уникальное поле
+    article=models.CharField(max_length=15, unique=True, help_text='артикул товара') # артикул, уникальное поле
     brand_name=models.ForeignKey(Brands, on_delete=models.DO_NOTHING,
                                  related_name='catalog_items') # связь с сущностью Бренды
-    model_name=models.CharField(max_length=20, help_text='модель') # Наименование модели
+    model_name=models.CharField(max_length=15, help_text='модель') # Наименование модели
     model_series=models.ManyToManyField(Series, blank=True) # связь с сущностью Серии
     def __str__(self):
         return self.brand_name.name+' '+self.model_name
@@ -217,3 +217,16 @@ class ProductsSKU(models.Model):
     subject=models.CharField(verbose_name='subject in Russian',max_length=50, blank=True, default='')
     class Meta:
         unique_together = (('SPU', 'SKU'),)
+
+class AliFeedOperations(models.Model):
+    jobID=models.PositiveIntegerField(primary_key=True)
+    timeOperation=models.TimeField(auto_now_add=True)
+    request_id=models.CharField(max_length=10, unique=True)
+
+class AliFeedOperationsLog(models.Model):
+    job=models.ForeignKey(AliFeedOperations, on_delete=models.CASCADE)
+    item_content_id=models.CharField(max_length=15)
+    item_execution_result=models.CharField(max_length=250,blank=True, default='' )
+
+    class Meta:
+        unique_together = (('job', 'item_content_id'),)

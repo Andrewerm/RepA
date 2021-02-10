@@ -11,7 +11,7 @@ from django.contrib.auth.decorators import login_required
 from .servicesCRM import serviceAli, check_funcs, orderAliInfo, DEPARTURE_CITIES
 from django.core.paginator import Paginator
 from services.cdek_services import CdekAPI, CdekOrder
-from services.utils import handle_avangard_file, handle_myownstore, handle_tradechas, handle_syncInventory
+from services.utils import handle_avangard_file, handle_myownstore, handle_tradechas, handle_syncInventory, handle_getsyncInventoryResults
 from services.avangard import AvangardApi
 
 
@@ -336,4 +336,8 @@ def importTradechas(request):
 
 def syncInventory(request):
     handle_syncInventory()
+    return HttpResponse('готово')
+
+def getInventorySyncResults(request, jobid):
+    handle_getsyncInventoryResults(jobid)
     return HttpResponse('готово')

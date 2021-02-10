@@ -1,6 +1,6 @@
-from crmApp.models import AliProducts, Catalog, Stores, Suppliers,Brands, ProductsSKU
+from crmApp.models import AliProducts, Catalog, Stores, Suppliers,Brands, AliFeedOperations, AliFeedOperationsLog
 from crmApp.servicesCRM import serviceAli, check_funcs
-import re
+import re, json
 from services.google_services import importMyStockVostok, importMyStockMoskvin, importTradeChas
 from services.avangard import AvangardApi
 
@@ -129,35 +129,43 @@ def handle_tradechas():
 @check_funcs
 def handle_syncInventory():
 
-    listing=AliProducts.objects.all()
+    listing=AliProducts.objects.all() #[476:478] # пробег по всем продуктам Aliexpress
     print(f'начинаем синхронизацию остатков с Али кол-во: {listing.count()}')
     requemas=[]
     for counter, spu  in enumerate(listing):
         item={"aliexpress_product_id": spu.product_id,  "multiple_sku_update_list": []}
         for sku in spu.product.all():
-            ind = next((i for i,x in enumerate(sku.SKU) if x=='r' or x=='b'), None)
+            ind = next((i for i,x in enumerate(sku.SKU) if x=='r' or x=='b'), None) # пытаемся найти "r" или "b" в SKU
             # ind=sku.SKU.find('r') or sku.SKU.find('b') or None
-            model=sku.model+sku.SKU[ind] if ind else sku.model
-            searchingModel=Catalog.objects.filter(article=model)
+            model=sku.model+sku.SKU[ind] if ind else sku.model # прибавляем к модели "r" или "b"
+            searchingModel=Catalog.objects.filter(article=model) # пытаемся найти модель в поле article
+            if not searchingModel.count():
+                searchingModel = Catalog.objects.filter(model_name=model) # если не нашли, то ищем в поле model
             if searchingModel.count():
                 foundModel=searchingModel.first()
-                print(f'нашли {foundModel.brand_name.name} {foundModel.article} кол-во: {foundModel.stock()}')
+                print(f'{counter} нашли {foundModel.brand_name.name} {foundModel.article} кол-во: {foundModel.stock()}')
                 item["multiple_sku_update_list"].append({"sku_code":sku.SKU,  "inventory": foundModel.stock()})
+            else:
+                print(f'{counter}  {model} не нашли ')
+                item["multiple_sku_update_list"].append({"sku_code": sku.SKU, "inventory": 0}) # если не нашли, то ноль
         if spu.product.count():
             requemas.append({"item_content_id":str(counter), "item_content":item})
+    a = serviceAli()
+    result=a.updateStockAmountAsync(json.dumps(requemas))
+    jobid=result['aliexpress_solution_feed_submit_response']['job_id']
+    request_id=result['aliexpress_solution_feed_submit_response']['request_id']
+    AliFeedOperations.objects.create(jobID=jobid, request_id=request_id)
 
+@check_funcs
+def handle_getsyncInventoryResults(jobid):
+    a=serviceAli()
+    result=a.updateStockAmountAsyncResults(jobid)
+    mas=[]
+    for i in result['aliexpress_solution_feed_query_response']['result_list']['single_item_response_dto']:
+        jobidmodel=AliFeedOperations.objects.get(jobID=jobid)
+        data=AliFeedOperationsLog(job=jobidmodel, item_content_id= i['item_content_id'],
+                                  item_execution_result=i['item_execution_result'])
+        mas.append(data)
+    AliFeedOperationsLog.objects.bulk_create(mas)
     pass
-    print('done')
-
-
-
-    # a = serviceAli()
-    # a.updateStockAmountAsync()
-
-
-        # productDetailInfo = a.getProduct(i.product_id)
-        # print(productDetailInfo['subject'])
-        # for j in productDetailInfo['aeop_ae_product_s_k_us']['global_aeop_ae_product_sku']:
-        #     print(f'  остаток: {j["ipm_sku_stock"]}')
-
 
