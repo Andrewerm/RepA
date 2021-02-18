@@ -29,7 +29,7 @@ SizeSlice=30 # размер среза (кол-во записей в парти
 
 NOPVZ=[{'code':'000', 'location':{'address': 'Нет ПВЗ' }}]
 DEPARTURE_CITIES=[{'id':'fromSaratov','name': 'Саратов','PVZ':'SAR4', 'index':'410012'},
-                  {'id':'fromKazan','name': 'Казань','PVZ':'NSHI1', 'index':'422000'},
+                  {'id':'fromKazan','name': 'Новое Шигалеево','PVZ':'NSHI1', 'index':'422000'},
                   {'id':'fromChelny','name':'Набережные Челны','PVZ':'NCHL6', 'index':'423802'}]
 
 def check_funcs(func):
