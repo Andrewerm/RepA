@@ -59,13 +59,13 @@ class Import_from_google_sheets(ABC):
 
 class importTradeChas(Import_from_google_sheets):
     SAMPLE_SPREADSHEET_ID = '16Nkq7PLHNfif6mZEZDOoNkB68jjyOR-3Ca_rlM7OxAI'
-    SAMPLE_RANGE_NAME = 'трейдчасЭкспорт!E2:F1000'
+    SAMPLE_RANGE_NAME = 'трейдчасЭкспорт!D2:F1000'
 
     @classmethod
     def handled_data(cls):
         # TradeChasStock.objects.all().delete()
         values=cls.__get_data__()
-        values=list(filter(lambda x:(x[0]!='' and x[1]!='0'), values)) # удаляем строки с пробелами
+        values=list(filter(lambda x:(x[1]!='' and x[2]!='0'), values)) # удаляем строки с пробелами
         return values
         # values = map(lambda x: TradeChasStock(item=x[0], count=x[1]), values)
         # TradeChasStock.objects.bulk_create(values)

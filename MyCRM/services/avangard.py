@@ -28,7 +28,7 @@ class AvangardApi(providerAPI):
             data.data_expires=datetime.fromtimestamp(data_expires, tz=timezone.utc)
             data.save()
         else:
-            print('Мспользуем старый куки от сайта Авангард')
+            print('Используем старый куки от сайта Авангард')
             self.session=pickle.loads(data.token)
 
 
@@ -56,18 +56,5 @@ class AvangardApi(providerAPI):
         self.resp("POST", self.BASE_URL + 'cart/', data=data, type='html')
         print('очистка корзины')
 
-    # def updating_stocks(self):
-    #     list=Stores.objects.filter(quantity__gt=0).exclude(innerID__exact='')
-    #     mas=[]
-    #     for i in list:
-    #         i.quantity, i.wholesale_price=self.get_stock(i.innerID)
-    #         print(f'добавляем в корзину {i.innerID}')
-    #         mas.append(i)
-    #
-    #
-    #
-    #
-    #     Stores.objects.bulk_update(mas, ['quantity', 'wholesale_price'])
-    #     self.cart_cleaning()
 
 

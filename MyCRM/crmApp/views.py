@@ -195,6 +195,7 @@ class StoreEdit(UpdateView):
 
 @login_required
 def dashboard(request):
+
     if request.method=='GET':
         form=DashBoardForm(initial={'checkBoxOrders':True, 'depthDaysOrders':1, 'checkBoxProducts': False, 'depthDaysProducts':3, 'checkBoxGroups': False})
 
@@ -208,7 +209,7 @@ def dashboard(request):
                 a.updateProducts(int(form.data['depthDaysProducts']))
             if form.cleaned_data['checkBoxGroups']:
                 a.updateGroupList()
-    return render(request,'dashboard/dashboard.html', context={'form':form})
+    return render(request,'dashboard/dashboard.html', context={'form':form, 'active_page':'dashboard'})
 
 def userNew(request):
     if request.method=='POST':
@@ -226,6 +227,10 @@ class ProductsList(ListView):
     model=AliProducts
     context_object_name = 'productsList'
     template_name = 'products-list/products_list.html'
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['active_page'] = 'productlist'
+        return context
 
 
 def productInfoDetail(request, id):
@@ -258,7 +263,7 @@ def orderList(request):
     else:
         page_num = 1
     page = paginator.get_page(page_num)
-    context = {'page': page, 'data':page.object_list}
+    context = {'page': page, 'data':page.object_list, 'active_page':'orderlist'}
     return render(request, 'orders/orders_list.html', context)
 
 @check_funcs
@@ -290,18 +295,18 @@ def OrderInfoDetail(request, id):
             d['tariff_code'] =form.data[selectedShippingFrom]
             d['name'] = form.data['recieverFIO']
             if _isPVZ:
-                d['delivery_point'] =form.data['selectPVZ']
-            d['to_location']={'address':orderDetailInfo.pochta_normalized_address.get('street','')+
+                d['delivery_point'] =form.data['selectPVZ'] # если есть ПВЗ, то заполняется ПВЗ
+            else: # если нет, то заполняется адрес, оба сразу нельзя.
+                # Надо доделать, что если тариф до дома, то адрес должен заполняться, а не ПВЗ
+                d['to_location']={'address':orderDetailInfo.pochta_normalized_address.get('street','')+
                                         ','+orderDetailInfo.pochta_normalized_address.get('house','')+
                                         ','+orderDetailInfo.pochta_normalized_address.get('room',''),
                                   'postal_code':orderDetailInfo.pochta_normalized_address['index']}
             d['phone'] = orderDetailInfo.alidetailinfo_receipt_address['phone_country']+orderDetailInfo.alidetailinfo_receipt_address['mobile_no']
             d['packages'] = orderDetailInfo.product_list_for_cdek(form.data['insurance'])
             d['number'] = orderDetailInfo.order_id
-            i=0
-            while DEPARTURE_CITIES[i]['id']!=selectedShippingFrom: # подбираем ПВЗ по выбранному городу отправки
-                i+=1
-            d['shipment_point'] = DEPARTURE_CITIES[i]['PVZ']
+            # подбираем ПВЗ по выбранному городу отправки
+            d['shipment_point']=next((x['PVZ'] for x in DEPARTURE_CITIES if x['id']==selectedShippingFrom), None)
             newO = CdekOrder(**d) # добавление постоянных данных
             cdek = CdekAPI(client_id=Account, client_secret=Secure_password)
             result = cdek.new_order(newO)
@@ -324,7 +329,7 @@ def import_avangard(request):
     # importTradeChas.handled_data()
     # importMyStock.handled_data()
     # syncVostokInventory()
-    return render(request, context={'form':form}, template_name='products-list\load-avangard.html')
+    return render(request, context={'form':form, 'active_page':'importpage'}, template_name='products-list\load-avangard.html')
 
 def importMyOwn(request):
     handle_myownstore()

@@ -121,8 +121,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
-STATIC_URL = '/static/'
-STATIC_ROOT = '/static/'
+STATIC_URL = '/static/' # префикс, добавляемый к интернет-адресу статического файла.
+STATIC_ROOT = '/static/' # путь к основной папке, где хранятся статические файлы. Туда же собирает collectstatic
+STATICFILES_DIRS=[] # путь к доп. папкам, где хранятся стат. файлы
 LOGIN_URL=reverse_lazy('crm:login')
 LOGIN_REDIRECT_URL=reverse_lazy('crm:dashboard')
 LOGOUT_URL = reverse_lazy('crm:logout')

@@ -69,11 +69,22 @@ def GepardParsing(data):
         updatingData(brand=brandGepard , article=article, supplier=supplier, idProduct=data_item[2],avangardsession=s)
     s.cart_cleaning()
 
+def SlavaParsing(data):
+    brandGepard = Brands.objects.get(name='Слава')
+    s = AvangardApi()
+    supplier = Suppliers.objects.get(name='Авангард')
+    for data_item in data:
+        parts = data_item[1].split(' ')
+        article = parts[1].replace('-','/',1)
+        updatingData(brand=brandGepard, article=article, supplier=supplier, idProduct=data_item[2], avangardsession=s)
+    s.cart_cleaning()
 
 def handle_avangard_file(file):
-    BRANDS={'Восток':VostokParsing,
-            'Михаил Москвин': MoskvinParsing,
-            'Gepard Михаил Москвин': GepardParsing}
+    BRANDS={'vostok':VostokParsing,
+            'mikhail_moskvin': MoskvinParsing,
+            'gepard_mikhail_moskvin': GepardParsing,
+            'slava':SlavaParsing
+            }
     file_data=file.read().decode('utf-8') # получаем содержимое файла
     file_data=file_data[1:-1] # удаляем первую и последнюю мешающую кавычку
     lines=file_data.split('"\r\n') # разбиваем на строки
@@ -116,12 +127,12 @@ def handle_myownstore():
 def handle_tradechas():
     print('импортируем остатки из Трейдчас')
     dataVostok=importTradeChas.handled_data()
-    brand = Brands.objects.get(name='Восток')
+    # brand = Brands.objects.get(name=dataVostok[0])
     supplier = Suppliers.objects.get(name='Трейдчас')
     Stores.objects.filter(supplier=supplier).update(quantity=0)
     for data_item in dataVostok:
-        updatingData(brand=brand , article=data_item[0], model_name=data_item[0][:-1],
-                     supplier=supplier, quantityprice=(data_item[1],0))
+        updatingData(brand=Brands.objects.get(name=data_item[0]) , article=data_item[1], model_name=data_item[1][:-1],
+                     supplier=supplier, quantityprice=(data_item[2],0))
 
 
 
