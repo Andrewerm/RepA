@@ -3,6 +3,7 @@ from crmApp.servicesCRM import serviceAli, check_funcs
 import re, json
 from services.google_services import importMyStockVostok, importMyStockMoskvin, importTradeChas
 from services.avangard import AvangardApi
+from django.db.models import Sum
 
 
 
@@ -79,11 +80,22 @@ def SlavaParsing(data):
         updatingData(brand=brandGepard, article=article, supplier=supplier, idProduct=data_item[2], avangardsession=s)
     s.cart_cleaning()
 
+def DkleinParsing(data):
+    brandGepard = Brands.objects.get(name='Daniel Klein')
+    s = AvangardApi()
+    supplier = Suppliers.objects.get(name='Авангард')
+    for data_item in data:
+        parts = data_item[1].split(' ')
+        article = parts[-1]
+        updatingData(brand=brandGepard, article=article, supplier=supplier, idProduct=data_item[2], avangardsession=s)
+    s.cart_cleaning()
+
 def handle_avangard_file(file):
     BRANDS={'vostok':VostokParsing,
             'mikhail_moskvin': MoskvinParsing,
             'gepard_mikhail_moskvin': GepardParsing,
-            'slava':SlavaParsing
+            'slava':SlavaParsing,
+            'daniel_klein': DkleinParsing
             }
     file_data=file.read().decode('utf-8') # получаем содержимое файла
     file_data=file_data[1:-1] # удаляем первую и последнюю мешающую кавычку
@@ -139,7 +151,6 @@ def handle_tradechas():
 
 @check_funcs
 def handle_syncInventory():
-
     listing=AliProducts.objects.all() #[476:478] # пробег по всем продуктам Aliexpress
     print(f'начинаем синхронизацию остатков с Али кол-во: {listing.count()}')
     requemas=[]
@@ -147,18 +158,14 @@ def handle_syncInventory():
         item={"aliexpress_product_id": spu.product_id,  "multiple_sku_update_list": []}
         for sku in spu.product.all():
             ind = next((i for i,x in enumerate(sku.SKU) if x=='r' or x=='b'), None) # пытаемся найти "r" или "b" в SKU
-            # ind=sku.SKU.find('r') or sku.SKU.find('b') or None
             model=sku.model+sku.SKU[ind] if ind else sku.model # прибавляем к модели "r" или "b"
-            searchingModel=Catalog.objects.filter(article=model) # пытаемся найти модель в поле article
-            if not searchingModel.count():
-                searchingModel = Catalog.objects.filter(model_name=model) # если не нашли, то ищем в поле model
-            if searchingModel.count():
-                foundModel=searchingModel.first()
-                print(f'{counter} нашли {foundModel.brand_name.name} {foundModel.article} кол-во: {foundModel.stock()}')
-                item["multiple_sku_update_list"].append({"sku_code":sku.SKU,  "inventory": foundModel.stock()})
+            searchingModel=Catalog.objects.filter(article=model) if ind else Catalog.objects.filter(model_name=model)
+            stock=sum([x.stock() for x in searchingModel],0)
+            if stock:
+                print(f'{counter+1} нашли {searchingModel.first().brand_name.name} {model} кол-во: {stock}')
             else:
-                print(f'{counter}  {model} не нашли ')
-                item["multiple_sku_update_list"].append({"sku_code": sku.SKU, "inventory": 0}) # если не нашли, то ноль
+                print(f'{counter+1}  {model} не нашли ')
+            item["multiple_sku_update_list"].append({"sku_code": sku.SKU, "inventory": stock})
         if spu.product.count():
             requemas.append({"item_content_id":str(counter), "item_content":item})
     a = serviceAli()

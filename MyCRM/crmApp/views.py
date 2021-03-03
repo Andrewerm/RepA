@@ -227,6 +227,9 @@ class ProductsList(ListView):
     model=AliProducts
     context_object_name = 'productsList'
     template_name = 'products-list/products_list.html'
+    paginate_by = 10
+    paginate_orphans = 5
+    ordering='-gmt_create'
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['active_page'] = 'productlist'
@@ -246,25 +249,19 @@ def productInfoDetail(request, id):
         print(f' ошибка: {err}')
         return redirect('crm:products_list')
 
+class OrderList(ListView):
+    model=AliOrders
+    # context_object_name = 'orderList'
+    template_name = 'orders/orders_list.html'
+    ordering='-gmt_create'
+    paginate_orphans=5
+    paginate_by = 10
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['active_page'] = 'orderlist'
+        return context
 
-
-# class OrdersList(ListView):
-#     model=AliOrders
-#     context_object_name = 'ordersList'
-#     template_name = 'orders/orders_list.html'
-
-
-def orderList(request):
-    orders = AliOrders.objects.order_by('-gmt_create')
-    paginator = Paginator(orders, 20, orphans=5, allow_empty_first_page=True)
-    if 'page' in request.GET:
-        page_num=request.GET['page']
-    else:
-        page_num = 1
-    page = paginator.get_page(page_num)
-    context = {'page': page, 'data':page.object_list, 'active_page':'orderlist'}
-    return render(request, 'orders/orders_list.html', context)
 
 @check_funcs
 def OrderInfoDetail(request, id):
